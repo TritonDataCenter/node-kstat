@@ -13,45 +13,6 @@ using namespace v8;
 using std::string;
 using std::vector;
 
-/*
- * Some helper routines useful for those of us who would really prefer a
- * C API... ;)
- */
-string *
-stringMember(Local<Value> value, char *member, char *deflt)
-{
-	if (!value->IsObject())
-		return (new string (deflt));
-
-	Local<Object> o = Local<Object>::Cast(value);
-	Local<Value> v = o->Get(String::New(member));
-
-	if (!v->IsString())
-		return (new string (deflt));
-
-	String::AsciiValue val(v);
-	return (new string(*val));
-}
-
-int64_t
-intMember(Local<Value> value, char *member, int64_t deflt)
-{
-	int64_t rval = deflt;
-
-	if (!value->IsObject())
-		return (rval);
-
-	Local<Object> o = Local<Object>::Cast(value);
-	value = o->Get(String::New(member));
-
-	if (!value->IsNumber())
-		return (rval);
-
-	Local<Integer> i = Local<Integer>::Cast(value);
-
-	return (i->Value());
-}
-
 class KStatReader : node::ObjectWrap {
 public:
 	static void Initialize(Handle<Object> target);
@@ -72,6 +33,9 @@ protected:
 
 
 private:
+        static string *stringMember(Local<Value>, char *, char *);
+        static int64_t intMember(Local<Value>, char *, int64_t);
+
 	string *ksr_module;
 	string *ksr_class;
 	string *ksr_name;
@@ -97,6 +61,7 @@ KStatReader::~KStatReader()
 	delete ksr_module;
 	delete ksr_class;
 	delete ksr_name;
+        kstat_close(ksr_ctl);
 }
 
 int
@@ -151,6 +116,41 @@ KStatReader::Initialize(Handle<Object> target)
 	target->Set(String::NewSymbol("Reader"), templ->GetFunction());
 }
 
+string *
+KStatReader::stringMember(Local<Value> value, char *member, char *deflt)
+{
+	if (!value->IsObject())
+		return (new string (deflt));
+
+	Local<Object> o = Local<Object>::Cast(value);
+	Local<Value> v = o->Get(String::New(member));
+
+	if (!v->IsString())
+		return (new string (deflt));
+
+	String::AsciiValue val(v);
+	return (new string(*val));
+}
+
+int64_t
+KStatReader::intMember(Local<Value> value, char *member, int64_t deflt)
+{
+	int64_t rval = deflt;
+
+	if (!value->IsObject())
+		return (rval);
+
+	Local<Object> o = Local<Object>::Cast(value);
+	value = o->Get(String::New(member));
+
+	if (!value->IsNumber())
+		return (rval);
+
+	Local<Integer> i = Local<Integer>::Cast(value);
+
+	return (i->Value());
+}
+
 Handle<Value>
 KStatReader::New(const Arguments& args)
 {
@@ -193,8 +193,8 @@ KStatReader::error(const char *fmt, ...)
 Handle<Value>
 KStatReader::read(kstat_t *ksp)
 {
-	Local<Object> rval = Object::New();
-	Local<Object> data;
+	Handle<Object> rval = Object::New();
+	Handle<Object> data;
 	kstat_named_t *nm;
 	int i;
 
@@ -273,16 +273,12 @@ Handle<Value>
 KStatReader::Read(const Arguments& args)
 {
 	KStatReader *k = ObjectWrap::Unwrap<KStatReader>(args.Holder());
-	Local<Array> rval;
+	Handle<Array> rval;
+	HandleScope scope;
 	int i;
 
-	if (k->update() == -1) {
+	if (k->update() == -1)
 		return (k->error("failed to update kstat chain"));
-
-		char buf[256];
-		(void) sprintf(buf, "kstat_chain_update failed: %s", errno);
-		return (ThrowException(Exception::Error(String::New(buf))));
-	}
 
 	rval = Array::New(k->ksr_kstats.size());
 
