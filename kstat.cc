@@ -33,8 +33,10 @@ protected:
 
 
 private:
-        static string *stringMember(Local<Value>, char *, char *);
-        static int64_t intMember(Local<Value>, char *, int64_t);
+	static string *stringMember(Local<Value>, char *, char *);
+	static int64_t intMember(Local<Value>, char *, int64_t);
+	Handle<Object> data_named(kstat_t *);
+	Handle<Object> data_io(kstat_t *);
 
 	string *ksr_module;
 	string *ksr_class;
@@ -61,7 +63,7 @@ KStatReader::~KStatReader()
 	delete ksr_module;
 	delete ksr_class;
 	delete ksr_name;
-        kstat_close(ksr_ctl);
+	kstat_close(ksr_ctl);
 }
 
 int
@@ -190,40 +192,14 @@ KStatReader::error(const char *fmt, ...)
 	return (ThrowException(Exception::Error(String::New(err))));
 }
 
-Handle<Value>
-KStatReader::read(kstat_t *ksp)
+Handle<Object>
+KStatReader::data_named(kstat_t *ksp)
 {
-	Handle<Object> rval = Object::New();
-	Handle<Object> data;
-	kstat_named_t *nm;
+	Handle<Object> data = Object::New();
+	kstat_named_t *nm = KSTAT_NAMED_PTR(ksp);
 	int i;
 
-	rval->Set(String::New("class"), String::New(ksp->ks_class));
-	rval->Set(String::New("module"), String::New(ksp->ks_module));
-	rval->Set(String::New("name"), String::New(ksp->ks_name));
-	rval->Set(String::New("instance"), Integer::New(ksp->ks_instance));
-
-	if (kstat_read(ksr_ctl, ksp, NULL) == -1) {
-		/*
-		 * It is deeply annoying, but some kstats can return errors
-		 * under otherwise routine conditions.  (ACPI is one
-		 * offender; there are surely others.)  To prevent these
-		 * fouled kstats from completely ruining our day, we assign
-		 * an "error" member to the return value that consists of
-		 * the strerror().
-		 */
-		rval->Set(String::New("error"), String::New(strerror(errno)));
-		return (rval);
-	}
-
-	if (ksp->ks_type != KSTAT_TYPE_NAMED)
-		return (rval);
-
-	rval->Set(String::New("instance"), Integer::New(ksp->ks_instance));
-	rval->Set(String::New("snaptime"), Number::New(ksp->ks_snaptime));
-
-	data = Object::New();
-	nm = (kstat_named_t *)ksp->ks_data;
+	assert(ksp->ks_type == KSTAT_TYPE_NAMED);
 
 	for (i = 0; i < ksp->ks_ndata; i++, nm++) {
 		Handle<Value> val;
@@ -262,6 +238,71 @@ KStatReader::read(kstat_t *ksp)
 		}
 
 		data->Set(String::New(nm->name), val);
+	}
+
+	return (data);
+}
+
+Handle<Object>
+KStatReader::data_io(kstat_t *ksp)
+{
+	Handle<Object> data = Object::New();
+	kstat_io_t *io = KSTAT_IO_PTR(ksp);
+
+	assert(ksp->ks_type == KSTAT_TYPE_IO);
+
+	data->Set(String::New("nread"), Number::New(io->nread));
+	data->Set(String::New("nwritten"), Number::New(io->nwritten));
+	data->Set(String::New("reads"), Integer::New(io->reads));
+	data->Set(String::New("writes"), Integer::New(io->writes));
+
+	data->Set(String::New("wtime"), Number::New(io->wtime));
+	data->Set(String::New("wlentime"), Number::New(io->wlentime));
+	data->Set(String::New("wlastupdate"), Number::New(io->wlastupdate));
+
+	data->Set(String::New("rtime"), Number::New(io->rtime));
+	data->Set(String::New("rlentime"), Number::New(io->rlentime));
+	data->Set(String::New("rlastupdate"), Number::New(io->rlastupdate));
+
+	data->Set(String::New("wcnt"), Integer::New(io->wcnt));
+	data->Set(String::New("rcnt"), Integer::New(io->rcnt));
+
+	return (data);
+}
+
+Handle<Value>
+KStatReader::read(kstat_t *ksp)
+{
+	Handle<Object> rval = Object::New();
+	Handle<Object> data;
+
+	rval->Set(String::New("class"), String::New(ksp->ks_class));
+	rval->Set(String::New("module"), String::New(ksp->ks_module));
+	rval->Set(String::New("name"), String::New(ksp->ks_name));
+	rval->Set(String::New("instance"), Integer::New(ksp->ks_instance));
+
+	if (kstat_read(ksr_ctl, ksp, NULL) == -1) {
+		/*
+		 * It is deeply annoying, but some kstats can return errors
+		 * under otherwise routine conditions.  (ACPI is one
+		 * offender; there are surely others.)  To prevent these
+		 * fouled kstats from completely ruining our day, we assign
+		 * an "error" member to the return value that consists of
+		 * the strerror().
+		 */
+		rval->Set(String::New("error"), String::New(strerror(errno)));
+		return (rval);
+	}
+
+	rval->Set(String::New("instance"), Integer::New(ksp->ks_instance));
+	rval->Set(String::New("snaptime"), Number::New(ksp->ks_snaptime));
+
+	if (ksp->ks_type == KSTAT_TYPE_NAMED) {
+		data = data_named(ksp);
+	} else if (ksp->ks_type == KSTAT_TYPE_IO) {
+		data = data_io(ksp);
+	} else {
+		return (rval);
 	}
 
 	rval->Set(String::New("data"), data);
