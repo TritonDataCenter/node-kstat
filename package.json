@@ -1,0 +1,12 @@
+{
+	"name":		"kstat",
+	"version":	"0.0.1",
+	"description":	"Solaris libkstat bindings",
+	"homepage":	"https://github.com/bcantrill/node-kstat",
+	"author":	"Joyent (joyent.com)",
+	"engines":	{ "node": "*" },
+	"main":		"build/default/kstat",
+	"scripts": {
+	    "install": "node-waf configure build"
+	}
+}
