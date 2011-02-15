@@ -296,6 +296,7 @@ KStatReader::read(kstat_t *ksp)
 
 	rval->Set(String::New("instance"), Integer::New(ksp->ks_instance));
 	rval->Set(String::New("snaptime"), Number::New(ksp->ks_snaptime));
+	rval->Set(String::New("crtime"), Number::New(ksp->ks_crtime));
 
 	if (ksp->ks_type == KSTAT_TYPE_NAMED) {
 		data = data_named(ksp);
