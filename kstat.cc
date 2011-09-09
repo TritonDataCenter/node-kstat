@@ -18,7 +18,7 @@ public:
 	static void Initialize(Handle<Object> target);
 
 protected:
-	static Persistent<FunctionTemplate> KStatReader::templ;
+	static Persistent<FunctionTemplate> templ;
 
 	KStatReader(string *module, string *classname,
 	    string *name, int instance);
