@@ -1,7 +1,7 @@
 {
 	"name":		"kstat",
-	"version":	"0.0.2",
-	"description":	"Solaris libkstat bindings",
+	"version":	"0.1.0",
+	"description":	"illumos libkstat bindings",
 	"homepage":	"https://github.com/bcantrill/node-kstat",
 	"author":	"Joyent (joyent.com)",
 	"engines":	{ "node": ">=0.6" },
