@@ -22,14 +22,15 @@ protected:
 
 	KStatReader(string *module, string *classname,
 	    string *name, int instance);
+	void close();
 	Handle<Value> error(const char *fmt, ...);
 	Handle<Value> read(kstat_t *);
 	int update();
 	~KStatReader();
 
+	static Handle<Value> Close(const Arguments& args);
 	static Handle<Value> New(const Arguments& args);
 	static Handle<Value> Read(const Arguments& args);
-	static Handle<Value> Update(const Arguments& args);
 
 
 private:
@@ -63,7 +64,16 @@ KStatReader::~KStatReader()
 	delete ksr_module;
 	delete ksr_class;
 	delete ksr_name;
+
+	if (ksr_ctl != NULL)
+		this->close();
+}
+
+void
+KStatReader::close()
+{
 	kstat_close(ksr_ctl);
+	ksr_ctl = NULL;
 }
 
 int
@@ -114,6 +124,7 @@ KStatReader::Initialize(Handle<Object> target)
 	templ->SetClassName(String::NewSymbol("Reader"));
 
 	NODE_SET_PROTOTYPE_METHOD(templ, "read", KStatReader::Read);
+	NODE_SET_PROTOTYPE_METHOD(templ, "close", KStatReader::Close);
 
 	target->Set(String::NewSymbol("Reader"), templ->GetFunction());
 }
@@ -312,12 +323,28 @@ KStatReader::read(kstat_t *ksp)
 }
 
 Handle<Value>
+KStatReader::Close(const Arguments& args)
+{
+	KStatReader *k = ObjectWrap::Unwrap<KStatReader>(args.Holder());
+	HandleScope scope;
+
+	if (k->ksr_ctl == NULL)
+		return (k->error("kstat reader has already been closed\n"));
+
+	k->close();
+	return (Undefined());
+}
+
+Handle<Value>
 KStatReader::Read(const Arguments& args)
 {
 	KStatReader *k = ObjectWrap::Unwrap<KStatReader>(args.Holder());
 	Handle<Array> rval;
 	HandleScope scope;
 	int i;
+
+	if (k->ksr_ctl == NULL)
+		return (k->error("kstat reader has already been closed\n"));
 
 	if (k->update() == -1)
 		return (k->error("failed to update kstat chain"));
