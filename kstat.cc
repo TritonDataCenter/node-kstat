@@ -25,6 +25,7 @@ protected:
 	void close();
 	Handle<Value> error(const char *fmt, ...);
 	Handle<Value> read(kstat_t *);
+	bool matches(kstat_t *, string *, string *, string *, int64_t);
 	int update();
 	~KStatReader();
 
@@ -76,6 +77,22 @@ KStatReader::close()
 	ksr_ctl = NULL;
 }
 
+bool
+KStatReader::matches(kstat_t *ksp, string* fmodule, string* fclass,
+    string* fname, int64_t finstance)
+{
+	if (!fmodule->empty() && fmodule->compare(ksp->ks_module) != 0)
+		return (false);
+
+	if (!fclass->empty() && fclass->compare(ksp->ks_class) != 0)
+		return (false);
+
+	if (!fname->empty() && fname->compare(ksp->ks_name) != 0)
+		return (false);
+
+	return (finstance == -1 || ksp->ks_instance == finstance);
+}
+
 int
 KStatReader::update()
 {
@@ -92,18 +109,8 @@ KStatReader::update()
 	ksr_kstats.clear();
 
 	for (ksp = ksr_ctl->kc_chain; ksp != NULL; ksp = ksp->ks_next) {
-		if (!ksr_module->empty() &&
-		    ksr_module->compare(ksp->ks_module) != 0)
-			continue;
-
-		if (!ksr_class->empty() &&
-		    ksr_class->compare(ksp->ks_class) != 0)
-			continue;
-
-		if (!ksr_name->empty() && ksr_name->compare(ksp->ks_name) != 0)
-			continue;
-
-		if (ksr_instance != -1 && ksp->ks_instance != ksr_instance)
+		if (!this->matches(ksp,
+		    ksr_module, ksr_class, ksr_name, ksr_instance))
 			continue;
 
 		ksr_kstats.push_back(ksp);
@@ -341,7 +348,7 @@ KStatReader::Read(const Arguments& args)
 	KStatReader *k = ObjectWrap::Unwrap<KStatReader>(args.Holder());
 	Handle<Array> rval;
 	HandleScope scope;
-	int i;
+	int i, j;
 
 	if (k->ksr_ctl == NULL)
 		return (k->error("kstat reader has already been closed\n"));
@@ -349,15 +356,31 @@ KStatReader::Read(const Arguments& args)
 	if (k->update() == -1)
 		return (k->error("failed to update kstat chain"));
 
-	rval = Array::New(k->ksr_kstats.size());
+	string *rmodule = stringMember(args[0], "module", "");
+	string *rclass = stringMember(args[0], "class", "");
+	string *rname = stringMember(args[0], "name", "");
+	int64_t rinstance = intMember(args[0], "instance", -1);
+
+	rval = Array::New();
 
 	try {
-		for (i = 0; i < k->ksr_kstats.size(); i++)
-			rval->Set(i, k->read(k->ksr_kstats[i]));
+		for (i = 0, j = 0; i < k->ksr_kstats.size(); i++) {
+			if (!k->matches(k->ksr_kstats[i],
+			    rmodule, rclass, rname, rinstance))
+				continue;
+
+			rval->Set(j++, k->read(k->ksr_kstats[i]));
+		}
 	} catch (Handle<Value> err) {
+		delete rmodule;
+		delete rclass;
+		delete rname;
 		return (err);
 	}
 
+	delete rmodule;
+	delete rclass;
+	delete rname;
 	return (rval);
 }
 
