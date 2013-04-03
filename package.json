@@ -6,7 +6,4 @@
 	"author":	"Joyent (joyent.com)",
 	"engines":	{ "node": ">=0.6" },
 	"main":		"build/Release/kstat",
-	"scripts": {
-	    "install": "node-waf configure build"
-	}
 }
