@@ -1,9 +1,9 @@
 {
 	"name":		"kstat",
-	"version":	"0.3.0",
+	"version":	"0.4.0",
 	"description":	"illumos libkstat bindings",
 	"homepage":	"https://github.com/bcantrill/node-kstat",
 	"author":	"Joyent (joyent.com)",
 	"engines":	{ "node": ">=0.6" },
-	"main":		"build/Release/kstat",
+	"main":		"build/Release/kstat"
 }
