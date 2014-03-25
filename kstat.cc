@@ -241,103 +241,103 @@ KStatReader::data_raw_cpu_stat(kstat_t *ksp)
 	syswait = &stat->cpu_syswait;
 	vminfo  = &stat->cpu_vminfo;
 
-	data->Set(String::New("idle"), Integer::New(sysinfo->cpu[CPU_IDLE]));
-	data->Set(String::New("user"), Integer::New(sysinfo->cpu[CPU_USER]));
-	data->Set(String::New("kernel"), Integer::New(sysinfo->cpu[CPU_KERNEL]));
-	data->Set(String::New("wait"), Integer::New(sysinfo->cpu[CPU_WAIT]));
-	data->Set(String::New("wait_io"), Integer::New(sysinfo->wait[W_IO]));
-	data->Set(String::New("wait_swap"), Integer::New(sysinfo->wait[W_SWAP]));
-	data->Set(String::New("wait_pio"), Integer::New(sysinfo->wait[W_PIO]));
-	data->Set(String::New("bread"), Integer::New(sysinfo->bread));
-	data->Set(String::New("bwrite"), Integer::New(sysinfo->bwrite));
-	data->Set(String::New("lread"), Integer::New(sysinfo->lread));
-	data->Set(String::New("lwrite"), Integer::New(sysinfo->lwrite));
-	data->Set(String::New("phread"), Integer::New(sysinfo->phread));
-	data->Set(String::New("phwrite"), Integer::New(sysinfo->phwrite));
-	data->Set(String::New("pswitch"), Integer::New(sysinfo->pswitch));
-	data->Set(String::New("trap"), Integer::New(sysinfo->trap));
-	data->Set(String::New("intr"), Integer::New(sysinfo->intr));
-	data->Set(String::New("syscall"), Integer::New(sysinfo->syscall));
-	data->Set(String::New("sysread"), Integer::New(sysinfo->sysread));
-	data->Set(String::New("syswrite"), Integer::New(sysinfo->syswrite));
-	data->Set(String::New("sysfork"), Integer::New(sysinfo->sysfork));
-	data->Set(String::New("sysvfork"), Integer::New(sysinfo->sysvfork));
-	data->Set(String::New("sysexec"), Integer::New(sysinfo->sysexec));
-	data->Set(String::New("readch"), Integer::New(sysinfo->readch));
-	data->Set(String::New("writech"), Integer::New(sysinfo->writech));
-	data->Set(String::New("rcvint"), Integer::New(sysinfo->rcvint));
-	data->Set(String::New("xmtint"), Integer::New(sysinfo->xmtint));
-	data->Set(String::New("mdmint"), Integer::New(sysinfo->mdmint));
-	data->Set(String::New("rawch"), Integer::New(sysinfo->rawch));
-	data->Set(String::New("canch"), Integer::New(sysinfo->canch));
-	data->Set(String::New("outch"), Integer::New(sysinfo->outch));
-	data->Set(String::New("msg"), Integer::New(sysinfo->msg));
-	data->Set(String::New("sema"), Integer::New(sysinfo->sema));
-	data->Set(String::New("namei"), Integer::New(sysinfo->namei));
-	data->Set(String::New("ufsiget"), Integer::New(sysinfo->ufsiget));
-	data->Set(String::New("ufsdirblk"), Integer::New(sysinfo->ufsdirblk));
-	data->Set(String::New("ufsipage"), Integer::New(sysinfo->ufsipage));
-	data->Set(String::New("ufsinopage"), Integer::New(sysinfo->ufsinopage));
-	data->Set(String::New("inodeovf"), Integer::New(sysinfo->inodeovf));
-	data->Set(String::New("fileovf"), Integer::New(sysinfo->fileovf));
-	data->Set(String::New("procovf"), Integer::New(sysinfo->procovf));
-	data->Set(String::New("intrthread"), Integer::New(sysinfo->intrthread));
-	data->Set(String::New("intrblk"), Integer::New(sysinfo->intrblk));
-	data->Set(String::New("idlethread"), Integer::New(sysinfo->idlethread));
-	data->Set(String::New("inv_swtch"), Integer::New(sysinfo->inv_swtch));
-	data->Set(String::New("nthreads"), Integer::New(sysinfo->nthreads));
-	data->Set(String::New("cpumigrate"), Integer::New(sysinfo->cpumigrate));
-	data->Set(String::New("xcalls"), Integer::New(sysinfo->xcalls));
-	data->Set(String::New("mutex_adenters"), Integer::New(sysinfo->mutex_adenters));
-	data->Set(String::New("rw_rdfails"), Integer::New(sysinfo->rw_rdfails));
-	data->Set(String::New("rw_wrfails"), Integer::New(sysinfo->rw_wrfails));
-	data->Set(String::New("modload"), Integer::New(sysinfo->modload));
-	data->Set(String::New("modunload"), Integer::New(sysinfo->modunload));
-	data->Set(String::New("bawrite"), Integer::New(sysinfo->bawrite));
+	data->Set(String::New("idle"), Number::New(sysinfo->cpu[CPU_IDLE]));
+	data->Set(String::New("user"), Number::New(sysinfo->cpu[CPU_USER]));
+	data->Set(String::New("kernel"), Number::New(sysinfo->cpu[CPU_KERNEL]));
+	data->Set(String::New("wait"), Number::New(sysinfo->cpu[CPU_WAIT]));
+	data->Set(String::New("wait_io"), Number::New(sysinfo->wait[W_IO]));
+	data->Set(String::New("wait_swap"), Number::New(sysinfo->wait[W_SWAP]));
+	data->Set(String::New("wait_pio"), Number::New(sysinfo->wait[W_PIO]));
+	data->Set(String::New("bread"), Number::New(sysinfo->bread));
+	data->Set(String::New("bwrite"), Number::New(sysinfo->bwrite));
+	data->Set(String::New("lread"), Number::New(sysinfo->lread));
+	data->Set(String::New("lwrite"), Number::New(sysinfo->lwrite));
+	data->Set(String::New("phread"), Number::New(sysinfo->phread));
+	data->Set(String::New("phwrite"), Number::New(sysinfo->phwrite));
+	data->Set(String::New("pswitch"), Number::New(sysinfo->pswitch));
+	data->Set(String::New("trap"), Number::New(sysinfo->trap));
+	data->Set(String::New("intr"), Number::New(sysinfo->intr));
+	data->Set(String::New("syscall"), Number::New(sysinfo->syscall));
+	data->Set(String::New("sysread"), Number::New(sysinfo->sysread));
+	data->Set(String::New("syswrite"), Number::New(sysinfo->syswrite));
+	data->Set(String::New("sysfork"), Number::New(sysinfo->sysfork));
+	data->Set(String::New("sysvfork"), Number::New(sysinfo->sysvfork));
+	data->Set(String::New("sysexec"), Number::New(sysinfo->sysexec));
+	data->Set(String::New("readch"), Number::New(sysinfo->readch));
+	data->Set(String::New("writech"), Number::New(sysinfo->writech));
+	data->Set(String::New("rcvint"), Number::New(sysinfo->rcvint));
+	data->Set(String::New("xmtint"), Number::New(sysinfo->xmtint));
+	data->Set(String::New("mdmint"), Number::New(sysinfo->mdmint));
+	data->Set(String::New("rawch"), Number::New(sysinfo->rawch));
+	data->Set(String::New("canch"), Number::New(sysinfo->canch));
+	data->Set(String::New("outch"), Number::New(sysinfo->outch));
+	data->Set(String::New("msg"), Number::New(sysinfo->msg));
+	data->Set(String::New("sema"), Number::New(sysinfo->sema));
+	data->Set(String::New("namei"), Number::New(sysinfo->namei));
+	data->Set(String::New("ufsiget"), Number::New(sysinfo->ufsiget));
+	data->Set(String::New("ufsdirblk"), Number::New(sysinfo->ufsdirblk));
+	data->Set(String::New("ufsipage"), Number::New(sysinfo->ufsipage));
+	data->Set(String::New("ufsinopage"), Number::New(sysinfo->ufsinopage));
+	data->Set(String::New("inodeovf"), Number::New(sysinfo->inodeovf));
+	data->Set(String::New("fileovf"), Number::New(sysinfo->fileovf));
+	data->Set(String::New("procovf"), Number::New(sysinfo->procovf));
+	data->Set(String::New("intrthread"), Number::New(sysinfo->intrthread));
+	data->Set(String::New("intrblk"), Number::New(sysinfo->intrblk));
+	data->Set(String::New("idlethread"), Number::New(sysinfo->idlethread));
+	data->Set(String::New("inv_swtch"), Number::New(sysinfo->inv_swtch));
+	data->Set(String::New("nthreads"), Number::New(sysinfo->nthreads));
+	data->Set(String::New("cpumigrate"), Number::New(sysinfo->cpumigrate));
+	data->Set(String::New("xcalls"), Number::New(sysinfo->xcalls));
+	data->Set(String::New("mutex_adenters"), Number::New(sysinfo->mutex_adenters));
+	data->Set(String::New("rw_rdfails"), Number::New(sysinfo->rw_rdfails));
+	data->Set(String::New("rw_wrfails"), Number::New(sysinfo->rw_wrfails));
+	data->Set(String::New("modload"), Number::New(sysinfo->modload));
+	data->Set(String::New("modunload"), Number::New(sysinfo->modunload));
+	data->Set(String::New("bawrite"), Number::New(sysinfo->bawrite));
 #ifdef	STATISTICS	/* see header file */
-	data->Set(String::New("rw_enters"), Integer::New(sysinfo->rw_enters));
-	data->Set(String::New("win_uo_cnt"), Integer::New(sysinfo->win_uo_cnt));
-	data->Set(String::New("win_uu_cnt"), Integer::New(sysinfo->win_uu_cnt));
-	data->Set(String::New("win_so_cnt"), Integer::New(sysinfo->win_so_cnt));
-	data->Set(String::New("win_su_cnt"), Integer::New(sysinfo->win_su_cnt));
-	data->Set(String::New("win_suo_cnt"), Integer::New(sysinfo->win_suo_cnt));
+	data->Set(String::New("rw_enters"), Number::New(sysinfo->rw_enters));
+	data->Set(String::New("win_uo_cnt"), Number::New(sysinfo->win_uo_cnt));
+	data->Set(String::New("win_uu_cnt"), Number::New(sysinfo->win_uu_cnt));
+	data->Set(String::New("win_so_cnt"), Number::New(sysinfo->win_so_cnt));
+	data->Set(String::New("win_su_cnt"), Number::New(sysinfo->win_su_cnt));
+	data->Set(String::New("win_suo_cnt"), Number::New(sysinfo->win_suo_cnt));
 #endif
 
-	data->Set(String::New("iowait"), Integer::New(syswait->iowait));
-	data->Set(String::New("swap"), Integer::New(syswait->swap));
-	data->Set(String::New("physio"), Integer::New(syswait->physio));
+	data->Set(String::New("iowait"), Number::New(syswait->iowait));
+	data->Set(String::New("swap"), Number::New(syswait->swap));
+	data->Set(String::New("physio"), Number::New(syswait->physio));
 
-	data->Set(String::New("pgrec"), Integer::New(vminfo->pgrec));
-	data->Set(String::New("pgfrec"), Integer::New(vminfo->pgfrec));
-	data->Set(String::New("pgin"), Integer::New(vminfo->pgin));
-	data->Set(String::New("pgpgin"), Integer::New(vminfo->pgpgin));
-	data->Set(String::New("pgout"), Integer::New(vminfo->pgout));
-	data->Set(String::New("pgpgout"), Integer::New(vminfo->pgpgout));
-	data->Set(String::New("swapin"), Integer::New(vminfo->swapin));
-	data->Set(String::New("pgswapin"), Integer::New(vminfo->pgswapin));
-	data->Set(String::New("swapout"), Integer::New(vminfo->swapout));
-	data->Set(String::New("pgswapout"), Integer::New(vminfo->pgswapout));
-	data->Set(String::New("zfod"), Integer::New(vminfo->zfod));
-	data->Set(String::New("dfree"), Integer::New(vminfo->dfree));
-	data->Set(String::New("scan"), Integer::New(vminfo->scan));
-	data->Set(String::New("rev"), Integer::New(vminfo->rev));
-	data->Set(String::New("hat_fault"), Integer::New(vminfo->hat_fault));
-	data->Set(String::New("as_fault"), Integer::New(vminfo->as_fault));
-	data->Set(String::New("maj_fault"), Integer::New(vminfo->maj_fault));
-	data->Set(String::New("cow_fault"), Integer::New(vminfo->cow_fault));
-	data->Set(String::New("prot_fault"), Integer::New(vminfo->prot_fault));
-	data->Set(String::New("softlock"), Integer::New(vminfo->softlock));
-	data->Set(String::New("kernel_asflt"), Integer::New(vminfo->kernel_asflt));
-	data->Set(String::New("pgrrun"), Integer::New(vminfo->pgrrun));
-	data->Set(String::New("execpgin"), Integer::New(vminfo->execpgin));
-	data->Set(String::New("execpgout"), Integer::New(vminfo->execpgout));
-	data->Set(String::New("execfree"), Integer::New(vminfo->execfree));
-	data->Set(String::New("anonpgin"), Integer::New(vminfo->anonpgin));
-	data->Set(String::New("anonpgout"), Integer::New(vminfo->anonpgout));
-	data->Set(String::New("anonfree"), Integer::New(vminfo->anonfree));
-	data->Set(String::New("fspgin"), Integer::New(vminfo->fspgin));
-	data->Set(String::New("fspgout"), Integer::New(vminfo->fspgout));
-	data->Set(String::New("fsfree"), Integer::New(vminfo->fsfree));
+	data->Set(String::New("pgrec"), Number::New(vminfo->pgrec));
+	data->Set(String::New("pgfrec"), Number::New(vminfo->pgfrec));
+	data->Set(String::New("pgin"), Number::New(vminfo->pgin));
+	data->Set(String::New("pgpgin"), Number::New(vminfo->pgpgin));
+	data->Set(String::New("pgout"), Number::New(vminfo->pgout));
+	data->Set(String::New("pgpgout"), Number::New(vminfo->pgpgout));
+	data->Set(String::New("swapin"), Number::New(vminfo->swapin));
+	data->Set(String::New("pgswapin"), Number::New(vminfo->pgswapin));
+	data->Set(String::New("swapout"), Number::New(vminfo->swapout));
+	data->Set(String::New("pgswapout"), Number::New(vminfo->pgswapout));
+	data->Set(String::New("zfod"), Number::New(vminfo->zfod));
+	data->Set(String::New("dfree"), Number::New(vminfo->dfree));
+	data->Set(String::New("scan"), Number::New(vminfo->scan));
+	data->Set(String::New("rev"), Number::New(vminfo->rev));
+	data->Set(String::New("hat_fault"), Number::New(vminfo->hat_fault));
+	data->Set(String::New("as_fault"), Number::New(vminfo->as_fault));
+	data->Set(String::New("maj_fault"), Number::New(vminfo->maj_fault));
+	data->Set(String::New("cow_fault"), Number::New(vminfo->cow_fault));
+	data->Set(String::New("prot_fault"), Number::New(vminfo->prot_fault));
+	data->Set(String::New("softlock"), Number::New(vminfo->softlock));
+	data->Set(String::New("kernel_asflt"), Number::New(vminfo->kernel_asflt));
+	data->Set(String::New("pgrrun"), Number::New(vminfo->pgrrun));
+	data->Set(String::New("execpgin"), Number::New(vminfo->execpgin));
+	data->Set(String::New("execpgout"), Number::New(vminfo->execpgout));
+	data->Set(String::New("execfree"), Number::New(vminfo->execfree));
+	data->Set(String::New("anonpgin"), Number::New(vminfo->anonpgin));
+	data->Set(String::New("anonpgout"), Number::New(vminfo->anonpgout));
+	data->Set(String::New("anonfree"), Number::New(vminfo->anonfree));
+	data->Set(String::New("fspgin"), Number::New(vminfo->fspgin));
+	data->Set(String::New("fspgout"), Number::New(vminfo->fspgout));
+	data->Set(String::New("fsfree"), Number::New(vminfo->fsfree));
 
 	return (data);
 }
@@ -351,21 +351,21 @@ KStatReader::data_raw_var(kstat_t *ksp)
 
 	struct var	*var = (struct var *)(ksp->ks_data);
 
-	data->Set(String::New("v_buf"), Integer::New(var->v_buf));
-	data->Set(String::New("v_call"), Integer::New(var->v_call));
-	data->Set(String::New("v_proc"), Integer::New(var->v_proc));
-	data->Set(String::New("v_maxupttl"), Integer::New(var->v_maxupttl));
-	data->Set(String::New("v_nglobpris"), Integer::New(var->v_nglobpris));
-	data->Set(String::New("v_maxsyspri"), Integer::New(var->v_maxsyspri));
-	data->Set(String::New("v_clist"), Integer::New(var->v_clist));
-	data->Set(String::New("v_maxup"), Integer::New(var->v_maxup));
-	data->Set(String::New("v_hbuf"), Integer::New(var->v_hbuf));
-	data->Set(String::New("v_hmask"), Integer::New(var->v_hmask));
-	data->Set(String::New("v_pbuf"), Integer::New(var->v_pbuf));
-	data->Set(String::New("v_sptmap"), Integer::New(var->v_sptmap));
-	data->Set(String::New("v_maxpmem"), Integer::New(var->v_maxpmem));
-	data->Set(String::New("v_autoup"), Integer::New(var->v_autoup));
-	data->Set(String::New("v_bufhwm"), Integer::New(var->v_bufhwm));
+	data->Set(String::New("v_buf"), Number::New(var->v_buf));
+	data->Set(String::New("v_call"), Number::New(var->v_call));
+	data->Set(String::New("v_proc"), Number::New(var->v_proc));
+	data->Set(String::New("v_maxupttl"), Number::New(var->v_maxupttl));
+	data->Set(String::New("v_nglobpris"), Number::New(var->v_nglobpris));
+	data->Set(String::New("v_maxsyspri"), Number::New(var->v_maxsyspri));
+	data->Set(String::New("v_clist"), Number::New(var->v_clist));
+	data->Set(String::New("v_maxup"), Number::New(var->v_maxup));
+	data->Set(String::New("v_hbuf"), Number::New(var->v_hbuf));
+	data->Set(String::New("v_hmask"), Number::New(var->v_hmask));
+	data->Set(String::New("v_pbuf"), Number::New(var->v_pbuf));
+	data->Set(String::New("v_sptmap"), Number::New(var->v_sptmap));
+	data->Set(String::New("v_maxpmem"), Number::New(var->v_maxpmem));
+	data->Set(String::New("v_autoup"), Number::New(var->v_autoup));
+	data->Set(String::New("v_bufhwm"), Number::New(var->v_bufhwm));
 
 	return (data);
 }
@@ -379,14 +379,14 @@ KStatReader::data_raw_ncstats(kstat_t *ksp)
 
 	struct ncstats	*ncstats = (struct ncstats *)(ksp->ks_data);
 
-	data->Set(String::New("hits"), Integer::New(ncstats->hits));
-	data->Set(String::New("misses"), Integer::New(ncstats->misses));
-	data->Set(String::New("enters"), Integer::New(ncstats->enters));
-	data->Set(String::New("dbl_enters"), Integer::New(ncstats->dbl_enters));
-	data->Set(String::New("long_enter"), Integer::New(ncstats->long_enter));
-	data->Set(String::New("long_look"), Integer::New(ncstats->long_look));
-	data->Set(String::New("move_to_front"), Integer::New(ncstats->move_to_front));
-	data->Set(String::New("purges"), Integer::New(ncstats->purges));
+	data->Set(String::New("hits"), Number::New(ncstats->hits));
+	data->Set(String::New("misses"), Number::New(ncstats->misses));
+	data->Set(String::New("enters"), Number::New(ncstats->enters));
+	data->Set(String::New("dbl_enters"), Number::New(ncstats->dbl_enters));
+	data->Set(String::New("long_enter"), Number::New(ncstats->long_enter));
+	data->Set(String::New("long_look"), Number::New(ncstats->long_look));
+	data->Set(String::New("move_to_front"), Number::New(ncstats->move_to_front));
+	data->Set(String::New("purges"), Number::New(ncstats->purges));
 
 	return (data);
 }
@@ -400,12 +400,12 @@ KStatReader::data_raw_sysinfo(kstat_t *ksp)
 
 	sysinfo_t	*sysinfo = (sysinfo_t *)(ksp->ks_data);
 
-	data->Set(String::New("updates"), Integer::New(sysinfo->updates));
-	data->Set(String::New("runque"), Integer::New(sysinfo->runque));
-	data->Set(String::New("runocc"), Integer::New(sysinfo->runocc));
-	data->Set(String::New("swpque"), Integer::New(sysinfo->swpque));
-	data->Set(String::New("swpocc"), Integer::New(sysinfo->swpocc));
-	data->Set(String::New("waiting"), Integer::New(sysinfo->waiting));
+	data->Set(String::New("updates"), Number::New(sysinfo->updates));
+	data->Set(String::New("runque"), Number::New(sysinfo->runque));
+	data->Set(String::New("runocc"), Number::New(sysinfo->runocc));
+	data->Set(String::New("swpque"), Number::New(sysinfo->swpque));
+	data->Set(String::New("swpocc"), Number::New(sysinfo->swpocc));
+	data->Set(String::New("waiting"), Number::New(sysinfo->waiting));
 
 	return (data);
 }
@@ -419,12 +419,12 @@ KStatReader::data_raw_vminfo(kstat_t *ksp)
 
 	vminfo_t	*vminfo = (vminfo_t *)(ksp->ks_data);
 
-	data->Set(String::New("freemem"), Integer::New(vminfo->freemem));
-	data->Set(String::New("swap_resv"), Integer::New(vminfo->swap_resv));
-	data->Set(String::New("swap_alloc"), Integer::New(vminfo->swap_alloc));
-	data->Set(String::New("swap_avail"), Integer::New(vminfo->swap_avail));
-	data->Set(String::New("swap_free"), Integer::New(vminfo->swap_free));
-	data->Set(String::New("updates"), Integer::New(vminfo->updates));
+	data->Set(String::New("freemem"), Number::New(vminfo->freemem));
+	data->Set(String::New("swap_resv"), Number::New(vminfo->swap_resv));
+	data->Set(String::New("swap_alloc"), Number::New(vminfo->swap_alloc));
+	data->Set(String::New("swap_avail"), Number::New(vminfo->swap_avail));
+	data->Set(String::New("swap_free"), Number::New(vminfo->swap_free));
+	data->Set(String::New("updates"), Number::New(vminfo->updates));
 
 	return (data);
 }
@@ -439,29 +439,29 @@ KStatReader::data_raw_mntinfo(kstat_t *ksp)
 	struct mntinfo_kstat *mntinfo = (struct mntinfo_kstat *)(ksp->ks_data);
 
 	data->Set(String::New("mntinfo"), String::New(mntinfo->mik_proto));
-	data->Set(String::New("mik_vers"), Integer::New(mntinfo->mik_vers));
-	data->Set(String::New("mik_flags"), Integer::New(mntinfo->mik_flags));
-	data->Set(String::New("mik_secmod"), Integer::New(mntinfo->mik_secmod));
-	data->Set(String::New("mik_curread"), Integer::New(mntinfo->mik_curread));
-	data->Set(String::New("mik_curwrite"), Integer::New(mntinfo->mik_curwrite));
-	data->Set(String::New("mik_timeo"), Integer::New(mntinfo->mik_timeo));
-	data->Set(String::New("mik_retrans"), Integer::New(mntinfo->mik_retrans));
-	data->Set(String::New("mik_acregmin"), Integer::New(mntinfo->mik_acregmin));
-	data->Set(String::New("mik_acregmax"), Integer::New(mntinfo->mik_acregmax));
-	data->Set(String::New("mik_acdirmin"), Integer::New(mntinfo->mik_acdirmin));
-	data->Set(String::New("mik_acdirmax"), Integer::New(mntinfo->mik_acdirmax));
-	data->Set(String::New("lookup_srtt"), Integer::New(mntinfo->mik_timers[0].srtt));
-	data->Set(String::New("lookup_deviate"), Integer::New(mntinfo->mik_timers[0].deviate));
-	data->Set(String::New("lookup_rtxcur"), Integer::New(mntinfo->mik_timers[0].rtxcur));
-	data->Set(String::New("read_srtt"), Integer::New(mntinfo->mik_timers[1].srtt));
-	data->Set(String::New("read_deviate"), Integer::New(mntinfo->mik_timers[1].deviate));
-	data->Set(String::New("read_rtxcur"), Integer::New(mntinfo->mik_timers[1].rtxcur));
-	data->Set(String::New("write_srtt"), Integer::New(mntinfo->mik_timers[2].srtt));
-	data->Set(String::New("write_deviate"), Integer::New(mntinfo->mik_timers[2].deviate));
-	data->Set(String::New("write_rtxcur"), Integer::New(mntinfo->mik_timers[2].rtxcur));
-	data->Set(String::New("mik_noresponse"), Integer::New(mntinfo->mik_noresponse));
-	data->Set(String::New("mik_failover"), Integer::New(mntinfo->mik_failover));
-	data->Set(String::New("mik_remap"), Integer::New(mntinfo->mik_remap));
+	data->Set(String::New("mik_vers"), Number::New(mntinfo->mik_vers));
+	data->Set(String::New("mik_flags"), Number::New(mntinfo->mik_flags));
+	data->Set(String::New("mik_secmod"), Number::New(mntinfo->mik_secmod));
+	data->Set(String::New("mik_curread"), Number::New(mntinfo->mik_curread));
+	data->Set(String::New("mik_curwrite"), Number::New(mntinfo->mik_curwrite));
+	data->Set(String::New("mik_timeo"), Number::New(mntinfo->mik_timeo));
+	data->Set(String::New("mik_retrans"), Number::New(mntinfo->mik_retrans));
+	data->Set(String::New("mik_acregmin"), Number::New(mntinfo->mik_acregmin));
+	data->Set(String::New("mik_acregmax"), Number::New(mntinfo->mik_acregmax));
+	data->Set(String::New("mik_acdirmin"), Number::New(mntinfo->mik_acdirmin));
+	data->Set(String::New("mik_acdirmax"), Number::New(mntinfo->mik_acdirmax));
+	data->Set(String::New("lookup_srtt"), Number::New(mntinfo->mik_timers[0].srtt));
+	data->Set(String::New("lookup_deviate"), Number::New(mntinfo->mik_timers[0].deviate));
+	data->Set(String::New("lookup_rtxcur"), Number::New(mntinfo->mik_timers[0].rtxcur));
+	data->Set(String::New("read_srtt"), Number::New(mntinfo->mik_timers[1].srtt));
+	data->Set(String::New("read_deviate"), Number::New(mntinfo->mik_timers[1].deviate));
+	data->Set(String::New("read_rtxcur"), Number::New(mntinfo->mik_timers[1].rtxcur));
+	data->Set(String::New("write_srtt"), Number::New(mntinfo->mik_timers[2].srtt));
+	data->Set(String::New("write_deviate"), Number::New(mntinfo->mik_timers[2].deviate));
+	data->Set(String::New("write_rtxcur"), Number::New(mntinfo->mik_timers[2].rtxcur));
+	data->Set(String::New("mik_noresponse"), Number::New(mntinfo->mik_noresponse));
+	data->Set(String::New("mik_failover"), Number::New(mntinfo->mik_failover));
+	data->Set(String::New("mik_remap"), Number::New(mntinfo->mik_remap));
 	data->Set(String::New("mntinfo"), String::New(mntinfo->mik_curserver));
 
 	return (data);
@@ -552,11 +552,11 @@ KStatReader::data_intr(kstat_t *ksp)
 
 	assert(ksp->ks_type == KSTAT_TYPE_INTR);
 
-	data->Set(String::New("KSTAT_INTR_HARD"), Integer::New(intr->intrs[KSTAT_INTR_HARD]));
-	data->Set(String::New("KSTAT_INTR_SOFT"), Integer::New(intr->intrs[KSTAT_INTR_SOFT]));
-	data->Set(String::New("KSTAT_INTR_WATCHDOG"), Integer::New(intr->intrs[KSTAT_INTR_WATCHDOG]));
-	data->Set(String::New("KSTAT_INTR_SPURIOUS"), Integer::New(intr->intrs[KSTAT_INTR_SPURIOUS]));
-	data->Set(String::New("KSTAT_INTR_MULTSVC"), Integer::New(intr->intrs[KSTAT_INTR_MULTSVC]));
+	data->Set(String::New("KSTAT_INTR_HARD"), Number::New(intr->intrs[KSTAT_INTR_HARD]));
+	data->Set(String::New("KSTAT_INTR_SOFT"), Number::New(intr->intrs[KSTAT_INTR_SOFT]));
+	data->Set(String::New("KSTAT_INTR_WATCHDOG"), Number::New(intr->intrs[KSTAT_INTR_WATCHDOG]));
+	data->Set(String::New("KSTAT_INTR_SPURIOUS"), Number::New(intr->intrs[KSTAT_INTR_SPURIOUS]));
+	data->Set(String::New("KSTAT_INTR_MULTSVC"), Number::New(intr->intrs[KSTAT_INTR_MULTSVC]));
 
 	return (data);
 }
