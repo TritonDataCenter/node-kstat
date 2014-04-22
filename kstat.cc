@@ -154,13 +154,13 @@ string *
 KStatReader::stringMember(Local<Value> value, char *member, char *deflt)
 {
 	if (!value->IsObject())
-		return (new string (deflt));
+		return (new string(deflt));
 
 	Local<Object> o = Local<Object>::Cast(value);
 	Local<Value> v = o->Get(String::New(member));
 
 	if (!v->IsString())
-		return (new string (deflt));
+		return (new string(deflt));
 
 	String::AsciiValue val(v);
 	return (new string(*val));
@@ -288,7 +288,8 @@ KStatReader::data_raw_cpu_stat(kstat_t *ksp)
 	data->Set(String::New("nthreads"), Number::New(sysinfo->nthreads));
 	data->Set(String::New("cpumigrate"), Number::New(sysinfo->cpumigrate));
 	data->Set(String::New("xcalls"), Number::New(sysinfo->xcalls));
-	data->Set(String::New("mutex_adenters"), Number::New(sysinfo->mutex_adenters));
+	data->Set(String::New("mutex_adenters"),
+	    Number::New(sysinfo->mutex_adenters));
 	data->Set(String::New("rw_rdfails"), Number::New(sysinfo->rw_rdfails));
 	data->Set(String::New("rw_wrfails"), Number::New(sysinfo->rw_wrfails));
 	data->Set(String::New("modload"), Number::New(sysinfo->modload));
@@ -300,7 +301,8 @@ KStatReader::data_raw_cpu_stat(kstat_t *ksp)
 	data->Set(String::New("win_uu_cnt"), Number::New(sysinfo->win_uu_cnt));
 	data->Set(String::New("win_so_cnt"), Number::New(sysinfo->win_so_cnt));
 	data->Set(String::New("win_su_cnt"), Number::New(sysinfo->win_su_cnt));
-	data->Set(String::New("win_suo_cnt"), Number::New(sysinfo->win_suo_cnt));
+	data->Set(String::New("win_suo_cnt"),
+	    Number::New(sysinfo->win_suo_cnt));
 #endif
 
 	data->Set(String::New("iowait"), Number::New(syswait->iowait));
@@ -327,7 +329,8 @@ KStatReader::data_raw_cpu_stat(kstat_t *ksp)
 	data->Set(String::New("cow_fault"), Number::New(vminfo->cow_fault));
 	data->Set(String::New("prot_fault"), Number::New(vminfo->prot_fault));
 	data->Set(String::New("softlock"), Number::New(vminfo->softlock));
-	data->Set(String::New("kernel_asflt"), Number::New(vminfo->kernel_asflt));
+	data->Set(String::New("kernel_asflt"),
+	    Number::New(vminfo->kernel_asflt));
 	data->Set(String::New("pgrrun"), Number::New(vminfo->pgrrun));
 	data->Set(String::New("execpgin"), Number::New(vminfo->execpgin));
 	data->Set(String::New("execpgout"), Number::New(vminfo->execpgout));
@@ -385,7 +388,8 @@ KStatReader::data_raw_ncstats(kstat_t *ksp)
 	data->Set(String::New("dbl_enters"), Number::New(ncstats->dbl_enters));
 	data->Set(String::New("long_enter"), Number::New(ncstats->long_enter));
 	data->Set(String::New("long_look"), Number::New(ncstats->long_look));
-	data->Set(String::New("move_to_front"), Number::New(ncstats->move_to_front));
+	data->Set(String::New("move_to_front"),
+	    Number::New(ncstats->move_to_front));
 	data->Set(String::New("purges"), Number::New(ncstats->purges));
 
 	return (data);
@@ -438,31 +442,56 @@ KStatReader::data_raw_mntinfo(kstat_t *ksp)
 
 	struct mntinfo_kstat *mntinfo = (struct mntinfo_kstat *)(ksp->ks_data);
 
-	data->Set(String::New("mntinfo"), String::New(mntinfo->mik_proto));
-	data->Set(String::New("mik_vers"), Number::New(mntinfo->mik_vers));
-	data->Set(String::New("mik_flags"), Number::New(mntinfo->mik_flags));
-	data->Set(String::New("mik_secmod"), Number::New(mntinfo->mik_secmod));
-	data->Set(String::New("mik_curread"), Number::New(mntinfo->mik_curread));
-	data->Set(String::New("mik_curwrite"), Number::New(mntinfo->mik_curwrite));
-	data->Set(String::New("mik_timeo"), Number::New(mntinfo->mik_timeo));
-	data->Set(String::New("mik_retrans"), Number::New(mntinfo->mik_retrans));
-	data->Set(String::New("mik_acregmin"), Number::New(mntinfo->mik_acregmin));
-	data->Set(String::New("mik_acregmax"), Number::New(mntinfo->mik_acregmax));
-	data->Set(String::New("mik_acdirmin"), Number::New(mntinfo->mik_acdirmin));
-	data->Set(String::New("mik_acdirmax"), Number::New(mntinfo->mik_acdirmax));
-	data->Set(String::New("lookup_srtt"), Number::New(mntinfo->mik_timers[0].srtt));
-	data->Set(String::New("lookup_deviate"), Number::New(mntinfo->mik_timers[0].deviate));
-	data->Set(String::New("lookup_rtxcur"), Number::New(mntinfo->mik_timers[0].rtxcur));
-	data->Set(String::New("read_srtt"), Number::New(mntinfo->mik_timers[1].srtt));
-	data->Set(String::New("read_deviate"), Number::New(mntinfo->mik_timers[1].deviate));
-	data->Set(String::New("read_rtxcur"), Number::New(mntinfo->mik_timers[1].rtxcur));
-	data->Set(String::New("write_srtt"), Number::New(mntinfo->mik_timers[2].srtt));
-	data->Set(String::New("write_deviate"), Number::New(mntinfo->mik_timers[2].deviate));
-	data->Set(String::New("write_rtxcur"), Number::New(mntinfo->mik_timers[2].rtxcur));
-	data->Set(String::New("mik_noresponse"), Number::New(mntinfo->mik_noresponse));
-	data->Set(String::New("mik_failover"), Number::New(mntinfo->mik_failover));
-	data->Set(String::New("mik_remap"), Number::New(mntinfo->mik_remap));
-	data->Set(String::New("mntinfo"), String::New(mntinfo->mik_curserver));
+	data->Set(String::New("mntinfo"),
+	    String::New(mntinfo->mik_proto));
+	data->Set(String::New("mik_vers"),
+	    Number::New(mntinfo->mik_vers));
+	data->Set(String::New("mik_flags"),
+	    Number::New(mntinfo->mik_flags));
+	data->Set(String::New("mik_secmod"),
+	    Number::New(mntinfo->mik_secmod));
+	data->Set(String::New("mik_curread"),
+	    Number::New(mntinfo->mik_curread));
+	data->Set(String::New("mik_curwrite"),
+	    Number::New(mntinfo->mik_curwrite));
+	data->Set(String::New("mik_timeo"),
+	    Number::New(mntinfo->mik_timeo));
+	data->Set(String::New("mik_retrans"),
+	    Number::New(mntinfo->mik_retrans));
+	data->Set(String::New("mik_acregmin"),
+	    Number::New(mntinfo->mik_acregmin));
+	data->Set(String::New("mik_acregmax"),
+	    Number::New(mntinfo->mik_acregmax));
+	data->Set(String::New("mik_acdirmin"),
+	    Number::New(mntinfo->mik_acdirmin));
+	data->Set(String::New("mik_acdirmax"),
+	    Number::New(mntinfo->mik_acdirmax));
+	data->Set(String::New("lookup_srtt"),
+	    Number::New(mntinfo->mik_timers[0].srtt));
+	data->Set(String::New("lookup_deviate"),
+	    Number::New(mntinfo->mik_timers[0].deviate));
+	data->Set(String::New("lookup_rtxcur"),
+	    Number::New(mntinfo->mik_timers[0].rtxcur));
+	data->Set(String::New("read_srtt"),
+	    Number::New(mntinfo->mik_timers[1].srtt));
+	data->Set(String::New("read_deviate"),
+	    Number::New(mntinfo->mik_timers[1].deviate));
+	data->Set(String::New("read_rtxcur"),
+	    Number::New(mntinfo->mik_timers[1].rtxcur));
+	data->Set(String::New("write_srtt"),
+	    Number::New(mntinfo->mik_timers[2].srtt));
+	data->Set(String::New("write_deviate"),
+	    Number::New(mntinfo->mik_timers[2].deviate));
+	data->Set(String::New("write_rtxcur"),
+	    Number::New(mntinfo->mik_timers[2].rtxcur));
+	data->Set(String::New("mik_noresponse"),
+	    Number::New(mntinfo->mik_noresponse));
+	data->Set(String::New("mik_failover"),
+	    Number::New(mntinfo->mik_failover));
+	data->Set(String::New("mik_remap"),
+	    Number::New(mntinfo->mik_remap));
+	data->Set(String::New("mntinfo"),
+	    String::New(mntinfo->mik_curserver));
 
 	return (data);
 }
@@ -474,17 +503,17 @@ KStatReader::data_raw(kstat_t *ksp)
 
 	assert(ksp->ks_type == KSTAT_TYPE_RAW);
 
-	if (!strcmp(ksp->ks_name, "cpu_stat")) {
+	if (strcmp(ksp->ks_name, "cpu_stat") == 0) {
 		data = data_raw_cpu_stat(ksp);
-	} else if (!strcmp(ksp->ks_name, "var")) {
+	} else if (strcmp(ksp->ks_name, "var") == 0) {
 		data = data_raw_var(ksp);
-	} else if (!strcmp(ksp->ks_name, "ncstats")) {
+	} else if (strcmp(ksp->ks_name, "ncstats") == 0) {
 		data = data_raw_ncstats(ksp);
-	} else if (!strcmp(ksp->ks_name, "sysinfo")) {
+	} else if (strcmp(ksp->ks_name, "sysinfo") == 0) {
 		data = data_raw_sysinfo(ksp);
-	} else if (!strcmp(ksp->ks_name, "vminfo")) {
+	} else if (strcmp(ksp->ks_name, "vminfo") == 0) {
 		data = data_raw_vminfo(ksp);
-	} else if (!strcmp(ksp->ks_name, "mntinfo")) {
+	} else if (strcmp(ksp->ks_name, "mntinfo") == 0) {
 		data = data_raw_mntinfo(ksp);
 	} else {
 		data = Object::New();
@@ -498,7 +527,7 @@ KStatReader::data_named(kstat_t *ksp)
 {
 	Handle<Object> data = Object::New();
 	kstat_named_t *nm = KSTAT_NAMED_PTR(ksp);
-	int i;
+	unsigned int i;
 
 	assert(ksp->ks_type == KSTAT_TYPE_NAMED);
 
@@ -552,11 +581,16 @@ KStatReader::data_intr(kstat_t *ksp)
 
 	assert(ksp->ks_type == KSTAT_TYPE_INTR);
 
-	data->Set(String::New("KSTAT_INTR_HARD"), Number::New(intr->intrs[KSTAT_INTR_HARD]));
-	data->Set(String::New("KSTAT_INTR_SOFT"), Number::New(intr->intrs[KSTAT_INTR_SOFT]));
-	data->Set(String::New("KSTAT_INTR_WATCHDOG"), Number::New(intr->intrs[KSTAT_INTR_WATCHDOG]));
-	data->Set(String::New("KSTAT_INTR_SPURIOUS"), Number::New(intr->intrs[KSTAT_INTR_SPURIOUS]));
-	data->Set(String::New("KSTAT_INTR_MULTSVC"), Number::New(intr->intrs[KSTAT_INTR_MULTSVC]));
+	data->Set(String::New("KSTAT_INTR_HARD"),
+	    Number::New(intr->intrs[KSTAT_INTR_HARD]));
+	data->Set(String::New("KSTAT_INTR_SOFT"),
+	    Number::New(intr->intrs[KSTAT_INTR_SOFT]));
+	data->Set(String::New("KSTAT_INTR_WATCHDOG"),
+	    Number::New(intr->intrs[KSTAT_INTR_WATCHDOG]));
+	data->Set(String::New("KSTAT_INTR_SPURIOUS"),
+	    Number::New(intr->intrs[KSTAT_INTR_SPURIOUS]));
+	data->Set(String::New("KSTAT_INTR_MULTSVC"),
+	    Number::New(intr->intrs[KSTAT_INTR_MULTSVC]));
 
 	return (data);
 }
@@ -588,7 +622,7 @@ KStatReader::data_io(kstat_t *ksp)
 	return (data);
 }
 
-Handle<Object> 
+Handle<Object>
 KStatReader::data_timer(kstat_t *ksp)
 {
 	Handle<Object> data = Object::New();
@@ -598,7 +632,8 @@ KStatReader::data_timer(kstat_t *ksp)
 
 	data->Set(String::New("name"), String::New(timer->name));
 	data->Set(String::New("num_events"), Number::New(timer->num_events));
-	data->Set(String::New("elapsed_time"), Number::New(timer->elapsed_time));
+	data->Set(String::New("elapsed_time"),
+	    Number::New(timer->elapsed_time));
 	data->Set(String::New("min_time"), Number::New(timer->min_time));
 	data->Set(String::New("max_time"), Number::New(timer->max_time));
 	data->Set(String::New("start_time"), Number::New(timer->start_time));
@@ -635,7 +670,7 @@ KStatReader::read(kstat_t *ksp)
 	rval->Set(String::New("snaptime"), Number::New(ksp->ks_snaptime));
 	rval->Set(String::New("crtime"), Number::New(ksp->ks_crtime));
 
-	switch(ksp->ks_type) {
+	switch (ksp->ks_type) {
 		case KSTAT_TYPE_RAW:
 			data = data_raw(ksp);
 			break;
@@ -684,7 +719,7 @@ KStatReader::Read(const Arguments& args)
 	KStatReader *k = ObjectWrap::Unwrap<KStatReader>(args.Holder());
 	Handle<Array> rval;
 	HandleScope scope;
-	int i, j;
+	unsigned int i, j;
 
 	if (k->ksr_ctl == NULL)
 		return (k->error("kstat reader has already been closed\n"));
@@ -721,7 +756,7 @@ KStatReader::Read(const Arguments& args)
 }
 
 extern "C" void
-init (Handle<Object> target) 
+init(Handle<Object> target)
 {
 	KStatReader::Initialize(target);
 }
