@@ -18,9 +18,9 @@ using namespace v8;
 using std::string;
 using std::vector;
 
-class KStatReader : node::ObjectWrap {
+class KStatReader : public node::ObjectWrap {
 public:
-	static void Initialize(Handle<Object> target);
+	static void Initialize(Handle<Object> exports);
 
 protected:
 	static Persistent<FunctionTemplate> templ;
@@ -28,31 +28,31 @@ protected:
 	KStatReader(string *module, string *classname,
 	    string *name, int instance);
 	void close();
-	Handle<Value> error(const char *fmt, ...);
-	Handle<Value> read(kstat_t *);
+	Handle<Value> error(Isolate *isolate, const char *fmt, ...);
+	Handle<Value> read(Isolate *, kstat_t *);
 	bool matches(kstat_t *, string *, string *, string *, int64_t);
 	int update();
 	~KStatReader();
 
-	static Handle<Value> Close(const Arguments& args);
-	static Handle<Value> New(const Arguments& args);
-	static Handle<Value> Read(const Arguments& args);
+	static void Close(const FunctionCallbackInfo<Value>& args);
+	static void New(const FunctionCallbackInfo<Value>& args);
+	static void Read(const FunctionCallbackInfo<Value>& args);
 
 
 private:
-	static string *stringMember(Local<Value>, char *, char *);
-	static int64_t intMember(Local<Value>, char *, int64_t);
-	Handle<Object> data_raw_cpu_stat(kstat_t *);
-	Handle<Object> data_raw_var(kstat_t *);
-	Handle<Object> data_raw_ncstats(kstat_t *);
-	Handle<Object> data_raw_sysinfo(kstat_t *);
-	Handle<Object> data_raw_vminfo(kstat_t *);
-	Handle<Object> data_raw_mntinfo(kstat_t *);
-	Handle<Object> data_raw(kstat_t *);
-	Handle<Object> data_named(kstat_t *);
-	Handle<Object> data_intr(kstat_t *);
-	Handle<Object> data_io(kstat_t *);
-	Handle<Object> data_timer(kstat_t *);
+	static string *stringMember(Isolate *, Local<Value>, char *, char *);
+	static int64_t intMember(Isolate *, Local<Value>, char *, int64_t);
+	Handle<Object> data_raw_cpu_stat(Isolate *, kstat_t *);
+	Handle<Object> data_raw_var(Isolate *, kstat_t *);
+	Handle<Object> data_raw_ncstats(Isolate *, kstat_t *);
+	Handle<Object> data_raw_sysinfo(Isolate *, kstat_t *);
+	Handle<Object> data_raw_vminfo(Isolate *, kstat_t *);
+	Handle<Object> data_raw_mntinfo(Isolate *, kstat_t *);
+	Handle<Object> data_raw(Isolate *, kstat_t *);
+	Handle<Object> data_named(Isolate *, kstat_t *);
+	Handle<Object> data_intr(Isolate *, kstat_t *);
+	Handle<Object> data_io(Isolate *, kstat_t *);
+	Handle<Object> data_timer(Isolate *, kstat_t *);
 
 	string *ksr_module;
 	string *ksr_class;
@@ -134,40 +134,41 @@ KStatReader::update()
 }
 
 void
-KStatReader::Initialize(Handle<Object> target)
+KStatReader::Initialize(Handle<Object> exports)
 {
-	HandleScope scope;
+	v8::Isolate* isolate;
+  isolate = exports->GetIsolate();
 
-	Local<FunctionTemplate> k = FunctionTemplate::New(KStatReader::New);
+	Local<FunctionTemplate> localTempl = FunctionTemplate::New(isolate, KStatReader::New);
+	localTempl->InstanceTemplate()->SetInternalFieldCount(1);
+	localTempl->SetClassName(String::NewFromUtf8(isolate, "Reader", String::kInternalizedString));
 
-	templ = Persistent<FunctionTemplate>::New(k);
-	templ->InstanceTemplate()->SetInternalFieldCount(1);
-	templ->SetClassName(String::NewSymbol("Reader"));
+	NODE_SET_PROTOTYPE_METHOD(localTempl, "read", KStatReader::Read);
+	NODE_SET_PROTOTYPE_METHOD(localTempl, "close", KStatReader::Close);
 
-	NODE_SET_PROTOTYPE_METHOD(templ, "read", KStatReader::Read);
-	NODE_SET_PROTOTYPE_METHOD(templ, "close", KStatReader::Close);
+	templ.Reset(isolate, localTempl);
 
-	target->Set(String::NewSymbol("Reader"), templ->GetFunction());
+	exports->Set(String::NewFromUtf8(isolate, "Reader", String::kInternalizedString), localTempl->GetFunction());
 }
 
 string *
-KStatReader::stringMember(Local<Value> value, char *member, char *deflt)
+KStatReader::stringMember(Isolate *isolate, Local<Value> value, char *member, char *deflt)
 {
 	if (!value->IsObject())
 		return (new string(deflt));
 
 	Local<Object> o = Local<Object>::Cast(value);
-	Local<Value> v = o->Get(String::New(member));
+	Local<Value> v = o->Get(String::NewFromUtf8(isolate, member));
 
 	if (!v->IsString())
 		return (new string(deflt));
 
-	String::AsciiValue val(v);
+	String::Utf8Value val(v);
 	return (new string(*val));
 }
 
 int64_t
-KStatReader::intMember(Local<Value> value, char *member, int64_t deflt)
+KStatReader::intMember(Isolate *isolate, Local<Value> value, char *member, int64_t deflt)
 {
 	int64_t rval = deflt;
 
@@ -175,7 +176,7 @@ KStatReader::intMember(Local<Value> value, char *member, int64_t deflt)
 		return (rval);
 
 	Local<Object> o = Local<Object>::Cast(value);
-	value = o->Get(String::New(member));
+	value = o->Get(String::NewFromUtf8(isolate, member));
 
 	if (!value->IsNumber())
 		return (rval);
@@ -185,23 +186,22 @@ KStatReader::intMember(Local<Value> value, char *member, int64_t deflt)
 	return (i->Value());
 }
 
-Handle<Value>
-KStatReader::New(const Arguments& args)
+void
+KStatReader::New(const FunctionCallbackInfo<Value>& args)
 {
-	HandleScope scope;
-
-	KStatReader *k = new KStatReader(stringMember(args[0], "module", ""),
-	    stringMember(args[0], "class", ""),
-	    stringMember(args[0], "name", ""),
-	    intMember(args[0], "instance", -1));
+	Isolate *isolate = args.GetIsolate();
+	KStatReader *k = new KStatReader(stringMember(isolate, args[0], "module", ""),
+	    stringMember(isolate, args[0], "class", ""),
+	    stringMember(isolate, args[0], "name", ""),
+	    intMember(isolate, args[0], "instance", -1));
 
 	k->Wrap(args.Holder());
 
-	return (args.This());
+	args.GetReturnValue().Set (args.This());
 }
 
 Handle<Value>
-KStatReader::error(const char *fmt, ...)
+KStatReader::error(Isolate *isolate, const char *fmt, ...)
 {
 	char buf[1024], buf2[1024];
 	char *err = buf;
@@ -221,13 +221,13 @@ KStatReader::error(const char *fmt, ...)
 		buf[strlen(buf) - 1] = '\0';
 	}
 
-	return (ThrowException(Exception::Error(String::New(err))));
+	return (isolate->ThrowException(Exception::Error(String::NewFromUtf8(isolate, err))));
 }
 
 Handle<Object>
-KStatReader::data_raw_cpu_stat(kstat_t *ksp)
+KStatReader::data_raw_cpu_stat(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 
 	assert(ksp->ks_data_size == sizeof (cpu_stat_t));
 
@@ -241,291 +241,291 @@ KStatReader::data_raw_cpu_stat(kstat_t *ksp)
 	syswait = &stat->cpu_syswait;
 	vminfo  = &stat->cpu_vminfo;
 
-	data->Set(String::New("idle"), Number::New(sysinfo->cpu[CPU_IDLE]));
-	data->Set(String::New("user"), Number::New(sysinfo->cpu[CPU_USER]));
-	data->Set(String::New("kernel"), Number::New(sysinfo->cpu[CPU_KERNEL]));
-	data->Set(String::New("wait"), Number::New(sysinfo->cpu[CPU_WAIT]));
-	data->Set(String::New("wait_io"), Number::New(sysinfo->wait[W_IO]));
-	data->Set(String::New("wait_swap"), Number::New(sysinfo->wait[W_SWAP]));
-	data->Set(String::New("wait_pio"), Number::New(sysinfo->wait[W_PIO]));
-	data->Set(String::New("bread"), Number::New(sysinfo->bread));
-	data->Set(String::New("bwrite"), Number::New(sysinfo->bwrite));
-	data->Set(String::New("lread"), Number::New(sysinfo->lread));
-	data->Set(String::New("lwrite"), Number::New(sysinfo->lwrite));
-	data->Set(String::New("phread"), Number::New(sysinfo->phread));
-	data->Set(String::New("phwrite"), Number::New(sysinfo->phwrite));
-	data->Set(String::New("pswitch"), Number::New(sysinfo->pswitch));
-	data->Set(String::New("trap"), Number::New(sysinfo->trap));
-	data->Set(String::New("intr"), Number::New(sysinfo->intr));
-	data->Set(String::New("syscall"), Number::New(sysinfo->syscall));
-	data->Set(String::New("sysread"), Number::New(sysinfo->sysread));
-	data->Set(String::New("syswrite"), Number::New(sysinfo->syswrite));
-	data->Set(String::New("sysfork"), Number::New(sysinfo->sysfork));
-	data->Set(String::New("sysvfork"), Number::New(sysinfo->sysvfork));
-	data->Set(String::New("sysexec"), Number::New(sysinfo->sysexec));
-	data->Set(String::New("readch"), Number::New(sysinfo->readch));
-	data->Set(String::New("writech"), Number::New(sysinfo->writech));
-	data->Set(String::New("rcvint"), Number::New(sysinfo->rcvint));
-	data->Set(String::New("xmtint"), Number::New(sysinfo->xmtint));
-	data->Set(String::New("mdmint"), Number::New(sysinfo->mdmint));
-	data->Set(String::New("rawch"), Number::New(sysinfo->rawch));
-	data->Set(String::New("canch"), Number::New(sysinfo->canch));
-	data->Set(String::New("outch"), Number::New(sysinfo->outch));
-	data->Set(String::New("msg"), Number::New(sysinfo->msg));
-	data->Set(String::New("sema"), Number::New(sysinfo->sema));
-	data->Set(String::New("namei"), Number::New(sysinfo->namei));
-	data->Set(String::New("ufsiget"), Number::New(sysinfo->ufsiget));
-	data->Set(String::New("ufsdirblk"), Number::New(sysinfo->ufsdirblk));
-	data->Set(String::New("ufsipage"), Number::New(sysinfo->ufsipage));
-	data->Set(String::New("ufsinopage"), Number::New(sysinfo->ufsinopage));
-	data->Set(String::New("inodeovf"), Number::New(sysinfo->inodeovf));
-	data->Set(String::New("fileovf"), Number::New(sysinfo->fileovf));
-	data->Set(String::New("procovf"), Number::New(sysinfo->procovf));
-	data->Set(String::New("intrthread"), Number::New(sysinfo->intrthread));
-	data->Set(String::New("intrblk"), Number::New(sysinfo->intrblk));
-	data->Set(String::New("idlethread"), Number::New(sysinfo->idlethread));
-	data->Set(String::New("inv_swtch"), Number::New(sysinfo->inv_swtch));
-	data->Set(String::New("nthreads"), Number::New(sysinfo->nthreads));
-	data->Set(String::New("cpumigrate"), Number::New(sysinfo->cpumigrate));
-	data->Set(String::New("xcalls"), Number::New(sysinfo->xcalls));
-	data->Set(String::New("mutex_adenters"),
-	    Number::New(sysinfo->mutex_adenters));
-	data->Set(String::New("rw_rdfails"), Number::New(sysinfo->rw_rdfails));
-	data->Set(String::New("rw_wrfails"), Number::New(sysinfo->rw_wrfails));
-	data->Set(String::New("modload"), Number::New(sysinfo->modload));
-	data->Set(String::New("modunload"), Number::New(sysinfo->modunload));
-	data->Set(String::New("bawrite"), Number::New(sysinfo->bawrite));
+	data->Set(String::NewFromUtf8(isolate, "idle"), Number::New(isolate, sysinfo->cpu[CPU_IDLE]));
+	data->Set(String::NewFromUtf8(isolate, "user"), Number::New(isolate, sysinfo->cpu[CPU_USER]));
+	data->Set(String::NewFromUtf8(isolate, "kernel"), Number::New(isolate, sysinfo->cpu[CPU_KERNEL]));
+	data->Set(String::NewFromUtf8(isolate, "wait"), Number::New(isolate, sysinfo->cpu[CPU_WAIT]));
+	data->Set(String::NewFromUtf8(isolate, "wait_io"), Number::New(isolate, sysinfo->wait[W_IO]));
+	data->Set(String::NewFromUtf8(isolate, "wait_swap"), Number::New(isolate, sysinfo->wait[W_SWAP]));
+	data->Set(String::NewFromUtf8(isolate, "wait_pio"), Number::New(isolate, sysinfo->wait[W_PIO]));
+	data->Set(String::NewFromUtf8(isolate, "bread"), Number::New(isolate, sysinfo->bread));
+	data->Set(String::NewFromUtf8(isolate, "bwrite"), Number::New(isolate, sysinfo->bwrite));
+	data->Set(String::NewFromUtf8(isolate, "lread"), Number::New(isolate, sysinfo->lread));
+	data->Set(String::NewFromUtf8(isolate, "lwrite"), Number::New(isolate, sysinfo->lwrite));
+	data->Set(String::NewFromUtf8(isolate, "phread"), Number::New(isolate, sysinfo->phread));
+	data->Set(String::NewFromUtf8(isolate, "phwrite"), Number::New(isolate, sysinfo->phwrite));
+	data->Set(String::NewFromUtf8(isolate, "pswitch"), Number::New(isolate, sysinfo->pswitch));
+	data->Set(String::NewFromUtf8(isolate, "trap"), Number::New(isolate, sysinfo->trap));
+	data->Set(String::NewFromUtf8(isolate, "intr"), Number::New(isolate, sysinfo->intr));
+	data->Set(String::NewFromUtf8(isolate, "syscall"), Number::New(isolate, sysinfo->syscall));
+	data->Set(String::NewFromUtf8(isolate, "sysread"), Number::New(isolate, sysinfo->sysread));
+	data->Set(String::NewFromUtf8(isolate, "syswrite"), Number::New(isolate, sysinfo->syswrite));
+	data->Set(String::NewFromUtf8(isolate, "sysfork"), Number::New(isolate, sysinfo->sysfork));
+	data->Set(String::NewFromUtf8(isolate, "sysvfork"), Number::New(isolate, sysinfo->sysvfork));
+	data->Set(String::NewFromUtf8(isolate, "sysexec"), Number::New(isolate, sysinfo->sysexec));
+	data->Set(String::NewFromUtf8(isolate, "readch"), Number::New(isolate, sysinfo->readch));
+	data->Set(String::NewFromUtf8(isolate, "writech"), Number::New(isolate, sysinfo->writech));
+	data->Set(String::NewFromUtf8(isolate, "rcvint"), Number::New(isolate, sysinfo->rcvint));
+	data->Set(String::NewFromUtf8(isolate, "xmtint"), Number::New(isolate, sysinfo->xmtint));
+	data->Set(String::NewFromUtf8(isolate, "mdmint"), Number::New(isolate, sysinfo->mdmint));
+	data->Set(String::NewFromUtf8(isolate, "rawch"), Number::New(isolate, sysinfo->rawch));
+	data->Set(String::NewFromUtf8(isolate, "canch"), Number::New(isolate, sysinfo->canch));
+	data->Set(String::NewFromUtf8(isolate, "outch"), Number::New(isolate, sysinfo->outch));
+	data->Set(String::NewFromUtf8(isolate, "msg"), Number::New(isolate, sysinfo->msg));
+	data->Set(String::NewFromUtf8(isolate, "sema"), Number::New(isolate, sysinfo->sema));
+	data->Set(String::NewFromUtf8(isolate, "namei"), Number::New(isolate, sysinfo->namei));
+	data->Set(String::NewFromUtf8(isolate, "ufsiget"), Number::New(isolate, sysinfo->ufsiget));
+	data->Set(String::NewFromUtf8(isolate, "ufsdirblk"), Number::New(isolate, sysinfo->ufsdirblk));
+	data->Set(String::NewFromUtf8(isolate, "ufsipage"), Number::New(isolate, sysinfo->ufsipage));
+	data->Set(String::NewFromUtf8(isolate, "ufsinopage"), Number::New(isolate, sysinfo->ufsinopage));
+	data->Set(String::NewFromUtf8(isolate, "inodeovf"), Number::New(isolate, sysinfo->inodeovf));
+	data->Set(String::NewFromUtf8(isolate, "fileovf"), Number::New(isolate, sysinfo->fileovf));
+	data->Set(String::NewFromUtf8(isolate, "procovf"), Number::New(isolate, sysinfo->procovf));
+	data->Set(String::NewFromUtf8(isolate, "intrthread"), Number::New(isolate, sysinfo->intrthread));
+	data->Set(String::NewFromUtf8(isolate, "intrblk"), Number::New(isolate, sysinfo->intrblk));
+	data->Set(String::NewFromUtf8(isolate, "idlethread"), Number::New(isolate, sysinfo->idlethread));
+	data->Set(String::NewFromUtf8(isolate, "inv_swtch"), Number::New(isolate, sysinfo->inv_swtch));
+	data->Set(String::NewFromUtf8(isolate, "nthreads"), Number::New(isolate, sysinfo->nthreads));
+	data->Set(String::NewFromUtf8(isolate, "cpumigrate"), Number::New(isolate, sysinfo->cpumigrate));
+	data->Set(String::NewFromUtf8(isolate, "xcalls"), Number::New(isolate, sysinfo->xcalls));
+	data->Set(String::NewFromUtf8(isolate, "mutex_adenters"),
+	    Number::New(isolate, sysinfo->mutex_adenters));
+	data->Set(String::NewFromUtf8(isolate, "rw_rdfails"), Number::New(isolate, sysinfo->rw_rdfails));
+	data->Set(String::NewFromUtf8(isolate, "rw_wrfails"), Number::New(isolate, sysinfo->rw_wrfails));
+	data->Set(String::NewFromUtf8(isolate, "modload"), Number::New(isolate, sysinfo->modload));
+	data->Set(String::NewFromUtf8(isolate, "modunload"), Number::New(isolate, sysinfo->modunload));
+	data->Set(String::NewFromUtf8(isolate, "bawrite"), Number::New(isolate, sysinfo->bawrite));
 #ifdef	STATISTICS	/* see header file */
-	data->Set(String::New("rw_enters"), Number::New(sysinfo->rw_enters));
-	data->Set(String::New("win_uo_cnt"), Number::New(sysinfo->win_uo_cnt));
-	data->Set(String::New("win_uu_cnt"), Number::New(sysinfo->win_uu_cnt));
-	data->Set(String::New("win_so_cnt"), Number::New(sysinfo->win_so_cnt));
-	data->Set(String::New("win_su_cnt"), Number::New(sysinfo->win_su_cnt));
-	data->Set(String::New("win_suo_cnt"),
-	    Number::New(sysinfo->win_suo_cnt));
+	data->Set(String::NewFromUtf8(isolate, "rw_enters"), Number::New(isolate, sysinfo->rw_enters));
+	data->Set(String::NewFromUtf8(isolate, "win_uo_cnt"), Number::New(isolate, sysinfo->win_uo_cnt));
+	data->Set(String::NewFromUtf8(isolate, "win_uu_cnt"), Number::New(isolate, sysinfo->win_uu_cnt));
+	data->Set(String::NewFromUtf8(isolate, "win_so_cnt"), Number::New(isolate, sysinfo->win_so_cnt));
+	data->Set(String::NewFromUtf8(isolate, "win_su_cnt"), Number::New(isolate, sysinfo->win_su_cnt));
+	data->Set(String::NewFromUtf8(isolate, "win_suo_cnt"),
+	    Number::New(isolate, sysinfo->win_suo_cnt));
 #endif
 
-	data->Set(String::New("iowait"), Number::New(syswait->iowait));
-	data->Set(String::New("swap"), Number::New(syswait->swap));
-	data->Set(String::New("physio"), Number::New(syswait->physio));
+	data->Set(String::NewFromUtf8(isolate, "iowait"), Number::New(isolate, syswait->iowait));
+	data->Set(String::NewFromUtf8(isolate, "swap"), Number::New(isolate, syswait->swap));
+	data->Set(String::NewFromUtf8(isolate, "physio"), Number::New(isolate, syswait->physio));
 
-	data->Set(String::New("pgrec"), Number::New(vminfo->pgrec));
-	data->Set(String::New("pgfrec"), Number::New(vminfo->pgfrec));
-	data->Set(String::New("pgin"), Number::New(vminfo->pgin));
-	data->Set(String::New("pgpgin"), Number::New(vminfo->pgpgin));
-	data->Set(String::New("pgout"), Number::New(vminfo->pgout));
-	data->Set(String::New("pgpgout"), Number::New(vminfo->pgpgout));
-	data->Set(String::New("swapin"), Number::New(vminfo->swapin));
-	data->Set(String::New("pgswapin"), Number::New(vminfo->pgswapin));
-	data->Set(String::New("swapout"), Number::New(vminfo->swapout));
-	data->Set(String::New("pgswapout"), Number::New(vminfo->pgswapout));
-	data->Set(String::New("zfod"), Number::New(vminfo->zfod));
-	data->Set(String::New("dfree"), Number::New(vminfo->dfree));
-	data->Set(String::New("scan"), Number::New(vminfo->scan));
-	data->Set(String::New("rev"), Number::New(vminfo->rev));
-	data->Set(String::New("hat_fault"), Number::New(vminfo->hat_fault));
-	data->Set(String::New("as_fault"), Number::New(vminfo->as_fault));
-	data->Set(String::New("maj_fault"), Number::New(vminfo->maj_fault));
-	data->Set(String::New("cow_fault"), Number::New(vminfo->cow_fault));
-	data->Set(String::New("prot_fault"), Number::New(vminfo->prot_fault));
-	data->Set(String::New("softlock"), Number::New(vminfo->softlock));
-	data->Set(String::New("kernel_asflt"),
-	    Number::New(vminfo->kernel_asflt));
-	data->Set(String::New("pgrrun"), Number::New(vminfo->pgrrun));
-	data->Set(String::New("execpgin"), Number::New(vminfo->execpgin));
-	data->Set(String::New("execpgout"), Number::New(vminfo->execpgout));
-	data->Set(String::New("execfree"), Number::New(vminfo->execfree));
-	data->Set(String::New("anonpgin"), Number::New(vminfo->anonpgin));
-	data->Set(String::New("anonpgout"), Number::New(vminfo->anonpgout));
-	data->Set(String::New("anonfree"), Number::New(vminfo->anonfree));
-	data->Set(String::New("fspgin"), Number::New(vminfo->fspgin));
-	data->Set(String::New("fspgout"), Number::New(vminfo->fspgout));
-	data->Set(String::New("fsfree"), Number::New(vminfo->fsfree));
+	data->Set(String::NewFromUtf8(isolate, "pgrec"), Number::New(isolate, vminfo->pgrec));
+	data->Set(String::NewFromUtf8(isolate, "pgfrec"), Number::New(isolate, vminfo->pgfrec));
+	data->Set(String::NewFromUtf8(isolate, "pgin"), Number::New(isolate, vminfo->pgin));
+	data->Set(String::NewFromUtf8(isolate, "pgpgin"), Number::New(isolate, vminfo->pgpgin));
+	data->Set(String::NewFromUtf8(isolate, "pgout"), Number::New(isolate, vminfo->pgout));
+	data->Set(String::NewFromUtf8(isolate, "pgpgout"), Number::New(isolate, vminfo->pgpgout));
+	data->Set(String::NewFromUtf8(isolate, "swapin"), Number::New(isolate, vminfo->swapin));
+	data->Set(String::NewFromUtf8(isolate, "pgswapin"), Number::New(isolate, vminfo->pgswapin));
+	data->Set(String::NewFromUtf8(isolate, "swapout"), Number::New(isolate, vminfo->swapout));
+	data->Set(String::NewFromUtf8(isolate, "pgswapout"), Number::New(isolate, vminfo->pgswapout));
+	data->Set(String::NewFromUtf8(isolate, "zfod"), Number::New(isolate, vminfo->zfod));
+	data->Set(String::NewFromUtf8(isolate, "dfree"), Number::New(isolate, vminfo->dfree));
+	data->Set(String::NewFromUtf8(isolate, "scan"), Number::New(isolate, vminfo->scan));
+	data->Set(String::NewFromUtf8(isolate, "rev"), Number::New(isolate, vminfo->rev));
+	data->Set(String::NewFromUtf8(isolate, "hat_fault"), Number::New(isolate, vminfo->hat_fault));
+	data->Set(String::NewFromUtf8(isolate, "as_fault"), Number::New(isolate, vminfo->as_fault));
+	data->Set(String::NewFromUtf8(isolate, "maj_fault"), Number::New(isolate, vminfo->maj_fault));
+	data->Set(String::NewFromUtf8(isolate, "cow_fault"), Number::New(isolate, vminfo->cow_fault));
+	data->Set(String::NewFromUtf8(isolate, "prot_fault"), Number::New(isolate, vminfo->prot_fault));
+	data->Set(String::NewFromUtf8(isolate, "softlock"), Number::New(isolate, vminfo->softlock));
+	data->Set(String::NewFromUtf8(isolate, "kernel_asflt"),
+	    Number::New(isolate, vminfo->kernel_asflt));
+	data->Set(String::NewFromUtf8(isolate, "pgrrun"), Number::New(isolate, vminfo->pgrrun));
+	data->Set(String::NewFromUtf8(isolate, "execpgin"), Number::New(isolate, vminfo->execpgin));
+	data->Set(String::NewFromUtf8(isolate, "execpgout"), Number::New(isolate, vminfo->execpgout));
+	data->Set(String::NewFromUtf8(isolate, "execfree"), Number::New(isolate, vminfo->execfree));
+	data->Set(String::NewFromUtf8(isolate, "anonpgin"), Number::New(isolate, vminfo->anonpgin));
+	data->Set(String::NewFromUtf8(isolate, "anonpgout"), Number::New(isolate, vminfo->anonpgout));
+	data->Set(String::NewFromUtf8(isolate, "anonfree"), Number::New(isolate, vminfo->anonfree));
+	data->Set(String::NewFromUtf8(isolate, "fspgin"), Number::New(isolate, vminfo->fspgin));
+	data->Set(String::NewFromUtf8(isolate, "fspgout"), Number::New(isolate, vminfo->fspgout));
+	data->Set(String::NewFromUtf8(isolate, "fsfree"), Number::New(isolate, vminfo->fsfree));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_raw_var(kstat_t *ksp)
+KStatReader::data_raw_var(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 
 	assert(ksp->ks_data_size == sizeof (struct var));
 
 	struct var	*var = (struct var *)(ksp->ks_data);
 
-	data->Set(String::New("v_buf"), Number::New(var->v_buf));
-	data->Set(String::New("v_call"), Number::New(var->v_call));
-	data->Set(String::New("v_proc"), Number::New(var->v_proc));
-	data->Set(String::New("v_maxupttl"), Number::New(var->v_maxupttl));
-	data->Set(String::New("v_nglobpris"), Number::New(var->v_nglobpris));
-	data->Set(String::New("v_maxsyspri"), Number::New(var->v_maxsyspri));
-	data->Set(String::New("v_clist"), Number::New(var->v_clist));
-	data->Set(String::New("v_maxup"), Number::New(var->v_maxup));
-	data->Set(String::New("v_hbuf"), Number::New(var->v_hbuf));
-	data->Set(String::New("v_hmask"), Number::New(var->v_hmask));
-	data->Set(String::New("v_pbuf"), Number::New(var->v_pbuf));
-	data->Set(String::New("v_sptmap"), Number::New(var->v_sptmap));
-	data->Set(String::New("v_maxpmem"), Number::New(var->v_maxpmem));
-	data->Set(String::New("v_autoup"), Number::New(var->v_autoup));
-	data->Set(String::New("v_bufhwm"), Number::New(var->v_bufhwm));
+	data->Set(String::NewFromUtf8(isolate, "v_buf"), Number::New(isolate, var->v_buf));
+	data->Set(String::NewFromUtf8(isolate, "v_call"), Number::New(isolate, var->v_call));
+	data->Set(String::NewFromUtf8(isolate, "v_proc"), Number::New(isolate, var->v_proc));
+	data->Set(String::NewFromUtf8(isolate, "v_maxupttl"), Number::New(isolate, var->v_maxupttl));
+	data->Set(String::NewFromUtf8(isolate, "v_nglobpris"), Number::New(isolate, var->v_nglobpris));
+	data->Set(String::NewFromUtf8(isolate, "v_maxsyspri"), Number::New(isolate, var->v_maxsyspri));
+	data->Set(String::NewFromUtf8(isolate, "v_clist"), Number::New(isolate, var->v_clist));
+	data->Set(String::NewFromUtf8(isolate, "v_maxup"), Number::New(isolate, var->v_maxup));
+	data->Set(String::NewFromUtf8(isolate, "v_hbuf"), Number::New(isolate, var->v_hbuf));
+	data->Set(String::NewFromUtf8(isolate, "v_hmask"), Number::New(isolate, var->v_hmask));
+	data->Set(String::NewFromUtf8(isolate, "v_pbuf"), Number::New(isolate, var->v_pbuf));
+	data->Set(String::NewFromUtf8(isolate, "v_sptmap"), Number::New(isolate, var->v_sptmap));
+	data->Set(String::NewFromUtf8(isolate, "v_maxpmem"), Number::New(isolate, var->v_maxpmem));
+	data->Set(String::NewFromUtf8(isolate, "v_autoup"), Number::New(isolate, var->v_autoup));
+	data->Set(String::NewFromUtf8(isolate, "v_bufhwm"), Number::New(isolate, var->v_bufhwm));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_raw_ncstats(kstat_t *ksp)
+KStatReader::data_raw_ncstats(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 
 	assert(ksp->ks_data_size == sizeof (struct ncstats));
 
 	struct ncstats	*ncstats = (struct ncstats *)(ksp->ks_data);
 
-	data->Set(String::New("hits"), Number::New(ncstats->hits));
-	data->Set(String::New("misses"), Number::New(ncstats->misses));
-	data->Set(String::New("enters"), Number::New(ncstats->enters));
-	data->Set(String::New("dbl_enters"), Number::New(ncstats->dbl_enters));
-	data->Set(String::New("long_enter"), Number::New(ncstats->long_enter));
-	data->Set(String::New("long_look"), Number::New(ncstats->long_look));
-	data->Set(String::New("move_to_front"),
-	    Number::New(ncstats->move_to_front));
-	data->Set(String::New("purges"), Number::New(ncstats->purges));
+	data->Set(String::NewFromUtf8(isolate, "hits"), Number::New(isolate, ncstats->hits));
+	data->Set(String::NewFromUtf8(isolate, "misses"), Number::New(isolate, ncstats->misses));
+	data->Set(String::NewFromUtf8(isolate, "enters"), Number::New(isolate, ncstats->enters));
+	data->Set(String::NewFromUtf8(isolate, "dbl_enters"), Number::New(isolate, ncstats->dbl_enters));
+	data->Set(String::NewFromUtf8(isolate, "long_enter"), Number::New(isolate, ncstats->long_enter));
+	data->Set(String::NewFromUtf8(isolate, "long_look"), Number::New(isolate, ncstats->long_look));
+	data->Set(String::NewFromUtf8(isolate, "move_to_front"),
+	    Number::New(isolate, ncstats->move_to_front));
+	data->Set(String::NewFromUtf8(isolate, "purges"), Number::New(isolate, ncstats->purges));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_raw_sysinfo(kstat_t *ksp)
+KStatReader::data_raw_sysinfo(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 
 	assert(ksp->ks_data_size == sizeof (sysinfo_t));
 
 	sysinfo_t	*sysinfo = (sysinfo_t *)(ksp->ks_data);
 
-	data->Set(String::New("updates"), Number::New(sysinfo->updates));
-	data->Set(String::New("runque"), Number::New(sysinfo->runque));
-	data->Set(String::New("runocc"), Number::New(sysinfo->runocc));
-	data->Set(String::New("swpque"), Number::New(sysinfo->swpque));
-	data->Set(String::New("swpocc"), Number::New(sysinfo->swpocc));
-	data->Set(String::New("waiting"), Number::New(sysinfo->waiting));
+	data->Set(String::NewFromUtf8(isolate, "updates"), Number::New(isolate, sysinfo->updates));
+	data->Set(String::NewFromUtf8(isolate, "runque"), Number::New(isolate, sysinfo->runque));
+	data->Set(String::NewFromUtf8(isolate, "runocc"), Number::New(isolate, sysinfo->runocc));
+	data->Set(String::NewFromUtf8(isolate, "swpque"), Number::New(isolate, sysinfo->swpque));
+	data->Set(String::NewFromUtf8(isolate, "swpocc"), Number::New(isolate, sysinfo->swpocc));
+	data->Set(String::NewFromUtf8(isolate, "waiting"), Number::New(isolate, sysinfo->waiting));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_raw_vminfo(kstat_t *ksp)
+KStatReader::data_raw_vminfo(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 
 	assert(ksp->ks_data_size == sizeof (vminfo_t));
 
 	vminfo_t	*vminfo = (vminfo_t *)(ksp->ks_data);
 
-	data->Set(String::New("freemem"), Number::New(vminfo->freemem));
-	data->Set(String::New("swap_resv"), Number::New(vminfo->swap_resv));
-	data->Set(String::New("swap_alloc"), Number::New(vminfo->swap_alloc));
-	data->Set(String::New("swap_avail"), Number::New(vminfo->swap_avail));
-	data->Set(String::New("swap_free"), Number::New(vminfo->swap_free));
-	data->Set(String::New("updates"), Number::New(vminfo->updates));
+	data->Set(String::NewFromUtf8(isolate, "freemem"), Number::New(isolate, vminfo->freemem));
+	data->Set(String::NewFromUtf8(isolate, "swap_resv"), Number::New(isolate, vminfo->swap_resv));
+	data->Set(String::NewFromUtf8(isolate, "swap_alloc"), Number::New(isolate, vminfo->swap_alloc));
+	data->Set(String::NewFromUtf8(isolate, "swap_avail"), Number::New(isolate, vminfo->swap_avail));
+	data->Set(String::NewFromUtf8(isolate, "swap_free"), Number::New(isolate, vminfo->swap_free));
+	data->Set(String::NewFromUtf8(isolate, "updates"), Number::New(isolate, vminfo->updates));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_raw_mntinfo(kstat_t *ksp)
+KStatReader::data_raw_mntinfo(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 
 	assert(ksp->ks_data_size == sizeof (struct mntinfo_kstat));
 
 	struct mntinfo_kstat *mntinfo = (struct mntinfo_kstat *)(ksp->ks_data);
 
-	data->Set(String::New("mntinfo"),
-	    String::New(mntinfo->mik_proto));
-	data->Set(String::New("mik_vers"),
-	    Number::New(mntinfo->mik_vers));
-	data->Set(String::New("mik_flags"),
-	    Number::New(mntinfo->mik_flags));
-	data->Set(String::New("mik_secmod"),
-	    Number::New(mntinfo->mik_secmod));
-	data->Set(String::New("mik_curread"),
-	    Number::New(mntinfo->mik_curread));
-	data->Set(String::New("mik_curwrite"),
-	    Number::New(mntinfo->mik_curwrite));
-	data->Set(String::New("mik_timeo"),
-	    Number::New(mntinfo->mik_timeo));
-	data->Set(String::New("mik_retrans"),
-	    Number::New(mntinfo->mik_retrans));
-	data->Set(String::New("mik_acregmin"),
-	    Number::New(mntinfo->mik_acregmin));
-	data->Set(String::New("mik_acregmax"),
-	    Number::New(mntinfo->mik_acregmax));
-	data->Set(String::New("mik_acdirmin"),
-	    Number::New(mntinfo->mik_acdirmin));
-	data->Set(String::New("mik_acdirmax"),
-	    Number::New(mntinfo->mik_acdirmax));
-	data->Set(String::New("lookup_srtt"),
-	    Number::New(mntinfo->mik_timers[0].srtt));
-	data->Set(String::New("lookup_deviate"),
-	    Number::New(mntinfo->mik_timers[0].deviate));
-	data->Set(String::New("lookup_rtxcur"),
-	    Number::New(mntinfo->mik_timers[0].rtxcur));
-	data->Set(String::New("read_srtt"),
-	    Number::New(mntinfo->mik_timers[1].srtt));
-	data->Set(String::New("read_deviate"),
-	    Number::New(mntinfo->mik_timers[1].deviate));
-	data->Set(String::New("read_rtxcur"),
-	    Number::New(mntinfo->mik_timers[1].rtxcur));
-	data->Set(String::New("write_srtt"),
-	    Number::New(mntinfo->mik_timers[2].srtt));
-	data->Set(String::New("write_deviate"),
-	    Number::New(mntinfo->mik_timers[2].deviate));
-	data->Set(String::New("write_rtxcur"),
-	    Number::New(mntinfo->mik_timers[2].rtxcur));
-	data->Set(String::New("mik_noresponse"),
-	    Number::New(mntinfo->mik_noresponse));
-	data->Set(String::New("mik_failover"),
-	    Number::New(mntinfo->mik_failover));
-	data->Set(String::New("mik_remap"),
-	    Number::New(mntinfo->mik_remap));
-	data->Set(String::New("mntinfo"),
-	    String::New(mntinfo->mik_curserver));
+	data->Set(String::NewFromUtf8(isolate, "mntinfo"),
+	    String::NewFromUtf8(isolate, mntinfo->mik_proto));
+	data->Set(String::NewFromUtf8(isolate, "mik_vers"),
+	    Number::New(isolate, mntinfo->mik_vers));
+	data->Set(String::NewFromUtf8(isolate, "mik_flags"),
+	    Number::New(isolate, mntinfo->mik_flags));
+	data->Set(String::NewFromUtf8(isolate, "mik_secmod"),
+	    Number::New(isolate, mntinfo->mik_secmod));
+	data->Set(String::NewFromUtf8(isolate, "mik_curread"),
+	    Number::New(isolate, mntinfo->mik_curread));
+	data->Set(String::NewFromUtf8(isolate, "mik_curwrite"),
+	    Number::New(isolate, mntinfo->mik_curwrite));
+	data->Set(String::NewFromUtf8(isolate, "mik_timeo"),
+	    Number::New(isolate, mntinfo->mik_timeo));
+	data->Set(String::NewFromUtf8(isolate, "mik_retrans"),
+	    Number::New(isolate, mntinfo->mik_retrans));
+	data->Set(String::NewFromUtf8(isolate, "mik_acregmin"),
+	    Number::New(isolate, mntinfo->mik_acregmin));
+	data->Set(String::NewFromUtf8(isolate, "mik_acregmax"),
+	    Number::New(isolate, mntinfo->mik_acregmax));
+	data->Set(String::NewFromUtf8(isolate, "mik_acdirmin"),
+	    Number::New(isolate, mntinfo->mik_acdirmin));
+	data->Set(String::NewFromUtf8(isolate, "mik_acdirmax"),
+	    Number::New(isolate, mntinfo->mik_acdirmax));
+	data->Set(String::NewFromUtf8(isolate, "lookup_srtt"),
+	    Number::New(isolate, mntinfo->mik_timers[0].srtt));
+	data->Set(String::NewFromUtf8(isolate, "lookup_deviate"),
+	    Number::New(isolate, mntinfo->mik_timers[0].deviate));
+	data->Set(String::NewFromUtf8(isolate, "lookup_rtxcur"),
+	    Number::New(isolate, mntinfo->mik_timers[0].rtxcur));
+	data->Set(String::NewFromUtf8(isolate, "read_srtt"),
+	    Number::New(isolate, mntinfo->mik_timers[1].srtt));
+	data->Set(String::NewFromUtf8(isolate, "read_deviate"),
+	    Number::New(isolate, mntinfo->mik_timers[1].deviate));
+	data->Set(String::NewFromUtf8(isolate, "read_rtxcur"),
+	    Number::New(isolate, mntinfo->mik_timers[1].rtxcur));
+	data->Set(String::NewFromUtf8(isolate, "write_srtt"),
+	    Number::New(isolate, mntinfo->mik_timers[2].srtt));
+	data->Set(String::NewFromUtf8(isolate, "write_deviate"),
+	    Number::New(isolate, mntinfo->mik_timers[2].deviate));
+	data->Set(String::NewFromUtf8(isolate, "write_rtxcur"),
+	    Number::New(isolate, mntinfo->mik_timers[2].rtxcur));
+	data->Set(String::NewFromUtf8(isolate, "mik_noresponse"),
+	    Number::New(isolate, mntinfo->mik_noresponse));
+	data->Set(String::NewFromUtf8(isolate, "mik_failover"),
+	    Number::New(isolate, mntinfo->mik_failover));
+	data->Set(String::NewFromUtf8(isolate, "mik_remap"),
+	    Number::New(isolate, mntinfo->mik_remap));
+	data->Set(String::NewFromUtf8(isolate, "mntinfo"),
+	    String::NewFromUtf8(isolate, mntinfo->mik_curserver));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_raw(kstat_t *ksp)
+KStatReader::data_raw(Isolate *isolate, kstat_t *ksp)
 {
 	Handle<Object> data;
 
 	assert(ksp->ks_type == KSTAT_TYPE_RAW);
 
 	if (strcmp(ksp->ks_name, "cpu_stat") == 0) {
-		data = data_raw_cpu_stat(ksp);
+		data = data_raw_cpu_stat(isolate, ksp);
 	} else if (strcmp(ksp->ks_name, "var") == 0) {
-		data = data_raw_var(ksp);
+		data = data_raw_var(isolate, ksp);
 	} else if (strcmp(ksp->ks_name, "ncstats") == 0) {
-		data = data_raw_ncstats(ksp);
+		data = data_raw_ncstats(isolate, ksp);
 	} else if (strcmp(ksp->ks_name, "sysinfo") == 0) {
-		data = data_raw_sysinfo(ksp);
+		data = data_raw_sysinfo(isolate, ksp);
 	} else if (strcmp(ksp->ks_name, "vminfo") == 0) {
-		data = data_raw_vminfo(ksp);
+		data = data_raw_vminfo(isolate, ksp);
 	} else if (strcmp(ksp->ks_name, "mntinfo") == 0) {
-		data = data_raw_mntinfo(ksp);
+		data = data_raw_mntinfo(isolate, ksp);
 	} else {
-		data = Object::New();
+		data = Object::New(isolate);
 	}
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_named(kstat_t *ksp)
+KStatReader::data_named(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 	kstat_named_t *nm = KSTAT_NAMED_PTR(ksp);
 	unsigned int i;
 
@@ -536,122 +536,122 @@ KStatReader::data_named(kstat_t *ksp)
 
 		switch (nm->data_type) {
 		case KSTAT_DATA_CHAR:
-			val = Number::New(nm->value.c[0]);
+			val = Number::New(isolate, nm->value.c[0]);
 			break;
 
 		case KSTAT_DATA_INT32:
-			val = Number::New(nm->value.i32);
+			val = Number::New(isolate, nm->value.i32);
 			break;
 
 		case KSTAT_DATA_UINT32:
-			val = Number::New(nm->value.ui32);
+			val = Number::New(isolate, nm->value.ui32);
 			break;
 
 		case KSTAT_DATA_INT64:
-			val = Number::New(nm->value.i64);
+			val = Number::New(isolate, nm->value.i64);
 			break;
 
 		case KSTAT_DATA_UINT64:
-			val = Number::New(nm->value.ui64);
+			val = Number::New(isolate, nm->value.ui64);
 			break;
 
 		case KSTAT_DATA_STRING:
-			val = String::New(KSTAT_NAMED_STR_PTR(nm));
+			val = String::NewFromUtf8(isolate, KSTAT_NAMED_STR_PTR(nm));
 			break;
 
 		default:
-			throw (error("unrecognized data type %d for member "
+			throw (error(isolate, "unrecognized data type %d for member "
 			    "\"%s\" in instance %d of stat \"%s\" (module "
 			    "\"%s\", class \"%s\")\n", nm->data_type,
 			    nm->name, ksp->ks_instance, ksp->ks_name,
 			    ksp->ks_module, ksp->ks_class));
 		}
 
-		data->Set(String::New(nm->name), val);
+		data->Set(String::NewFromUtf8(isolate, nm->name), val);
 	}
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_intr(kstat_t *ksp)
+KStatReader::data_intr(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 	kstat_intr_t *intr = KSTAT_INTR_PTR(ksp);
 
 	assert(ksp->ks_type == KSTAT_TYPE_INTR);
 
-	data->Set(String::New("KSTAT_INTR_HARD"),
-	    Number::New(intr->intrs[KSTAT_INTR_HARD]));
-	data->Set(String::New("KSTAT_INTR_SOFT"),
-	    Number::New(intr->intrs[KSTAT_INTR_SOFT]));
-	data->Set(String::New("KSTAT_INTR_WATCHDOG"),
-	    Number::New(intr->intrs[KSTAT_INTR_WATCHDOG]));
-	data->Set(String::New("KSTAT_INTR_SPURIOUS"),
-	    Number::New(intr->intrs[KSTAT_INTR_SPURIOUS]));
-	data->Set(String::New("KSTAT_INTR_MULTSVC"),
-	    Number::New(intr->intrs[KSTAT_INTR_MULTSVC]));
+	data->Set(String::NewFromUtf8(isolate, "KSTAT_INTR_HARD"),
+	    Number::New(isolate, intr->intrs[KSTAT_INTR_HARD]));
+	data->Set(String::NewFromUtf8(isolate, "KSTAT_INTR_SOFT"),
+	    Number::New(isolate, intr->intrs[KSTAT_INTR_SOFT]));
+	data->Set(String::NewFromUtf8(isolate, "KSTAT_INTR_WATCHDOG"),
+	    Number::New(isolate, intr->intrs[KSTAT_INTR_WATCHDOG]));
+	data->Set(String::NewFromUtf8(isolate, "KSTAT_INTR_SPURIOUS"),
+	    Number::New(isolate, intr->intrs[KSTAT_INTR_SPURIOUS]));
+	data->Set(String::NewFromUtf8(isolate, "KSTAT_INTR_MULTSVC"),
+	    Number::New(isolate, intr->intrs[KSTAT_INTR_MULTSVC]));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_io(kstat_t *ksp)
+KStatReader::data_io(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 	kstat_io_t *io = KSTAT_IO_PTR(ksp);
 
 	assert(ksp->ks_type == KSTAT_TYPE_IO);
 
-	data->Set(String::New("nread"), Number::New(io->nread));
-	data->Set(String::New("nwritten"), Number::New(io->nwritten));
-	data->Set(String::New("reads"), Integer::New(io->reads));
-	data->Set(String::New("writes"), Integer::New(io->writes));
+	data->Set(String::NewFromUtf8(isolate, "nread"), Number::New(isolate, io->nread));
+	data->Set(String::NewFromUtf8(isolate, "nwritten"), Number::New(isolate, io->nwritten));
+	data->Set(String::NewFromUtf8(isolate, "reads"), Integer::New(isolate, io->reads));
+	data->Set(String::NewFromUtf8(isolate, "writes"), Integer::New(isolate, io->writes));
 
-	data->Set(String::New("wtime"), Number::New(io->wtime));
-	data->Set(String::New("wlentime"), Number::New(io->wlentime));
-	data->Set(String::New("wlastupdate"), Number::New(io->wlastupdate));
+	data->Set(String::NewFromUtf8(isolate, "wtime"), Number::New(isolate, io->wtime));
+	data->Set(String::NewFromUtf8(isolate, "wlentime"), Number::New(isolate, io->wlentime));
+	data->Set(String::NewFromUtf8(isolate, "wlastupdate"), Number::New(isolate, io->wlastupdate));
 
-	data->Set(String::New("rtime"), Number::New(io->rtime));
-	data->Set(String::New("rlentime"), Number::New(io->rlentime));
-	data->Set(String::New("rlastupdate"), Number::New(io->rlastupdate));
+	data->Set(String::NewFromUtf8(isolate, "rtime"), Number::New(isolate, io->rtime));
+	data->Set(String::NewFromUtf8(isolate, "rlentime"), Number::New(isolate, io->rlentime));
+	data->Set(String::NewFromUtf8(isolate, "rlastupdate"), Number::New(isolate, io->rlastupdate));
 
-	data->Set(String::New("wcnt"), Integer::New(io->wcnt));
-	data->Set(String::New("rcnt"), Integer::New(io->rcnt));
+	data->Set(String::NewFromUtf8(isolate, "wcnt"), Integer::New(isolate, io->wcnt));
+	data->Set(String::NewFromUtf8(isolate, "rcnt"), Integer::New(isolate, io->rcnt));
 
 	return (data);
 }
 
 Handle<Object>
-KStatReader::data_timer(kstat_t *ksp)
+KStatReader::data_timer(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> data = Object::New();
+	Handle<Object> data = Object::New(isolate);
 	kstat_timer_t *timer = KSTAT_TIMER_PTR(ksp);
 
 	assert(ksp->ks_type == KSTAT_TYPE_TIMER);
 
-	data->Set(String::New("name"), String::New(timer->name));
-	data->Set(String::New("num_events"), Number::New(timer->num_events));
-	data->Set(String::New("elapsed_time"),
-	    Number::New(timer->elapsed_time));
-	data->Set(String::New("min_time"), Number::New(timer->min_time));
-	data->Set(String::New("max_time"), Number::New(timer->max_time));
-	data->Set(String::New("start_time"), Number::New(timer->start_time));
-	data->Set(String::New("stop_time"), Number::New(timer->stop_time));
+	data->Set(String::NewFromUtf8(isolate, "name"), String::NewFromUtf8(isolate, timer->name));
+	data->Set(String::NewFromUtf8(isolate, "num_events"), Number::New(isolate, timer->num_events));
+	data->Set(String::NewFromUtf8(isolate, "elapsed_time"),
+	    Number::New(isolate, timer->elapsed_time));
+	data->Set(String::NewFromUtf8(isolate, "min_time"), Number::New(isolate, timer->min_time));
+	data->Set(String::NewFromUtf8(isolate, "max_time"), Number::New(isolate, timer->max_time));
+	data->Set(String::NewFromUtf8(isolate, "start_time"), Number::New(isolate, timer->start_time));
+	data->Set(String::NewFromUtf8(isolate, "stop_time"), Number::New(isolate, timer->stop_time));
 
 	return (data);
 }
 
 Handle<Value>
-KStatReader::read(kstat_t *ksp)
+KStatReader::read(Isolate *isolate, kstat_t *ksp)
 {
-	Handle<Object> rval = Object::New();
+	Handle<Object> rval = Object::New(isolate);
 	Handle<Object> data;
 
-	rval->Set(String::New("class"), String::New(ksp->ks_class));
-	rval->Set(String::New("module"), String::New(ksp->ks_module));
-	rval->Set(String::New("name"), String::New(ksp->ks_name));
-	rval->Set(String::New("instance"), Integer::New(ksp->ks_instance));
+	rval->Set(String::NewFromUtf8(isolate, "class"), String::NewFromUtf8(isolate, ksp->ks_class));
+	rval->Set(String::NewFromUtf8(isolate, "module"), String::NewFromUtf8(isolate, ksp->ks_module));
+	rval->Set(String::NewFromUtf8(isolate, "name"), String::NewFromUtf8(isolate, ksp->ks_name));
+	rval->Set(String::NewFromUtf8(isolate, "instance"), Integer::New(isolate, ksp->ks_instance));
 
 	if (kstat_read(ksr_ctl, ksp, NULL) == -1) {
 		/*
@@ -662,77 +662,78 @@ KStatReader::read(kstat_t *ksp)
 		 * an "error" member to the return value that consists of
 		 * the strerror().
 		 */
-		rval->Set(String::New("error"), String::New(strerror(errno)));
+		rval->Set(String::NewFromUtf8(isolate, "error"), String::NewFromUtf8(isolate, strerror(errno)));
 		return (rval);
 	}
 
-	rval->Set(String::New("instance"), Integer::New(ksp->ks_instance));
-	rval->Set(String::New("snaptime"), Number::New(ksp->ks_snaptime));
-	rval->Set(String::New("crtime"), Number::New(ksp->ks_crtime));
+	rval->Set(String::NewFromUtf8(isolate, "instance"), Integer::New(isolate, ksp->ks_instance));
+	rval->Set(String::NewFromUtf8(isolate, "snaptime"), Number::New(isolate, ksp->ks_snaptime));
+	rval->Set(String::NewFromUtf8(isolate, "crtime"), Number::New(isolate, ksp->ks_crtime));
 
 	switch (ksp->ks_type) {
 		case KSTAT_TYPE_RAW:
-			data = data_raw(ksp);
+			data = data_raw(isolate, ksp);
 			break;
 
 		case KSTAT_TYPE_NAMED:
-			data = data_named(ksp);
+			data = data_named(isolate, ksp);
 			break;
 
 		case KSTAT_TYPE_INTR:
-			data = data_intr(ksp);
+			data = data_intr(isolate, ksp);
 			break;
 
 		case KSTAT_TYPE_IO:
-			data = data_io(ksp);
+			data = data_io(isolate, ksp);
 			break;
 
 		case KSTAT_TYPE_TIMER:
-			data = data_timer(ksp);
+			data = data_timer(isolate, ksp);
 			break;
 
 		default:
 			return (rval);
 	}
 
-	rval->Set(String::New("data"), data);
+	rval->Set(String::NewFromUtf8(isolate, "data"), data);
 
 	return (rval);
 }
 
-Handle<Value>
-KStatReader::Close(const Arguments& args)
+void
+KStatReader::Close(const FunctionCallbackInfo<Value>& args)
 {
 	KStatReader *k = ObjectWrap::Unwrap<KStatReader>(args.Holder());
-	HandleScope scope;
+	Isolate *isolate = args.GetIsolate();
 
 	if (k->ksr_ctl == NULL)
-		return (k->error("kstat reader has already been closed\n"));
+		args.GetReturnValue().Set (k->error(isolate, "kstat reader has already been closed\n"));
 
 	k->close();
-	return (Undefined());
+	args.GetReturnValue().SetUndefined();
 }
 
-Handle<Value>
-KStatReader::Read(const Arguments& args)
+void
+KStatReader::Read(const FunctionCallbackInfo<Value>& args)
 {
 	KStatReader *k = ObjectWrap::Unwrap<KStatReader>(args.Holder());
 	Handle<Array> rval;
-	HandleScope scope;
+	Isolate *isolate = args.GetIsolate();
+	ReturnValue<Value> returnValue = args.GetReturnValue();
 	unsigned int i, j;
 
 	if (k->ksr_ctl == NULL)
-		return (k->error("kstat reader has already been closed\n"));
+		returnValue.Set (k->error(isolate, "kstat reader has already been closed\n"));
 
 	if (k->update() == -1)
-		return (k->error("failed to update kstat chain"));
+		returnValue.Set (k->error(isolate, "failed to update kstat chain"));
 
-	string *rmodule = stringMember(args[0], "module", "");
-	string *rclass = stringMember(args[0], "class", "");
-	string *rname = stringMember(args[0], "name", "");
-	int64_t rinstance = intMember(args[0], "instance", -1);
+	string *rmodule = stringMember(isolate, args[0], "module", "");
+	string *rclass = stringMember(isolate, args[0], "class", "");
+	string *rname = stringMember(isolate, args[0], "name", "");
+	int64_t rinstance = intMember(isolate, args[0], "instance", -1);
 
-	rval = Array::New();
+	rval = Array::New(isolate);
 
 	try {
 		for (i = 0, j = 0; i < k->ksr_kstats.size(); i++) {
@@ -740,25 +741,25 @@ KStatReader::Read(const Arguments& args)
 			    rmodule, rclass, rname, rinstance))
 				continue;
 
-			rval->Set(j++, k->read(k->ksr_kstats[i]));
+			rval->Set(j++, k->read(isolate, k->ksr_kstats[i]));
 		}
 	} catch (Handle<Value> err) {
 		delete rmodule;
 		delete rclass;
 		delete rname;
-		return (err);
+		returnValue.Set (err);
 	}
 
 	delete rmodule;
 	delete rclass;
 	delete rname;
-	return (rval);
+	returnValue.Set (rval);
 }
 
 extern "C" void
-init(Handle<Object> target)
+init(Handle<Object> exports)
 {
-	KStatReader::Initialize(target);
+	KStatReader::Initialize(exports);
 }
 
 NODE_MODULE(kstat, init);
