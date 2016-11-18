@@ -5,21 +5,21 @@
  * name and/or instance will be displayed.  If the "-v" option is specified,
  * all fields in the named kstat (and their values) will be printed.
  */
-var sys = require('sys');
 var kstat = require('kstat');
 
 var options = { c: 'class', n: 'name', m: 'module', i: 'instance', v: true };
 var stats = {};
 var verbose = false;
+var i;
 
 for (i = 2; i < process.argv.length; i++) {
 	var arg = process.argv[i];
 	var opt = arg.charAt(1);
 
 	if (arg.charAt(0) != '-' || !opt || !options[opt]) {
-		sys.puts('invalid option "' + arg + '"');
+		console.log('invalid option "' + arg + '"');
 		process.exit(1);
-        }
+	}
 
 	if (opt == 'v') {
 		verbose = true;
@@ -27,7 +27,7 @@ for (i = 2; i < process.argv.length; i++) {
 	}
 
 	if (!(arg = process.argv[++i])) {
-		sys.puts('expected argument for option "' + opt + '"');
+		console.log('expected argument for option "' + opt + '"');
 		process.exit(1);
 	}
 
@@ -38,9 +38,9 @@ if (stats.hasOwnProperty('instance'))
 	stats.instance = parseInt(stats.instance, 10);
 
 var fixed = function (str, len) {
-	var rval = str, i;
+	var rval = str, j;
 
-	for (i = 0; i < len - str.length; i++)
+	for (j = 0; j < len - str.length; j++)
 		rval += ' ';
 
 	return (rval);
@@ -62,8 +62,8 @@ var header = function () {
 
 	for (f in fields)
 		str += fixed(f.toUpperCase(), fields[f]);
-	sys.puts(str);
-}
+	console.log(str);
+};
 
 header();
 
@@ -82,23 +82,23 @@ data.sort(function (l, r) {
 });
 
 for (i = 0; i < data.length; i++) {
-	str = '';
+	var s = '', f;
 
 	for (f in fields)
-		str += fixed(data[i][f], fields[f] + '');
+		s += fixed(data[i][f], fields[f] + '');
 
-	sys.puts(str);
+	console.log(s);
 
 	if (!verbose || !data[i].data)
 		continue;
 
-	sys.puts('|\n+--> ' + fixed('FIELD', 35) + 'VALUE');
+	console.log('|\n+--> ' + fixed('FIELD', 35) + 'VALUE');
 
 	for (f in data[i].data)
-		sys.puts('     ' + fixed(f, 35) + data[i].data[f] + '');
+		console.log('     ' + fixed(f, 35) + data[i].data[f] + '');
 
 	if (i < data.length - 1) {
-		sys.puts('');
+		console.log('');
 		header();
 	}
 }

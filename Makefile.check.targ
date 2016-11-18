@@ -1,0 +1,173 @@
+# -*- mode: makefile -*-
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright (c) 2016, Joyent, Inc.
+#
+
+#
+# Makefile.check.targ: common check targets.
+#
+# NOTE: This makefile comes from the "eng" repo. It's designed to be dropped
+# into other repos as-is without requiring any modifications. If you find
+# yourself changing this file, you should instead update the original copy in
+# eng.git and then update your repo to use the new version.
+#
+# This Makefile defines several useful targets and rules. You can use it by
+# including it from a Makefile that specifies some of the variables below.
+#
+# Targets defined in this Makefile:
+#
+#	check	Checks JavaScript files for lint and style
+#		Checks bash scripts for syntax
+#		Checks SMF manifests for validity against the SMF DTD
+#
+
+# For details on what this target is supposed to do, see the Joyent
+# Engineering Guide.
+#
+# To make use of these targets, you'll need to set some of these variables. Any
+# variables left unset will simply not be used.
+#
+#	BASH_FILES	Bash scripts to check for syntax
+#			(paths relative to top-level Makefile)
+#
+#	JSL_CONF_NODE	Specify JavaScriptLint configuration files
+#	JSL_CONF_WEB	(paths relative to top-level Makefile)
+#
+#			Node.js and Web configuration files are separate
+#			because you'll usually want different global variable
+#			configurations.  If no file is specified, none is given
+#			to jsl, which causes it to use a default configuration,
+#			which probably isn't what you want.
+#
+#	JSL_FILES_NODE	JavaScript files to check with Node config file.
+#	JSL_FILES_WEB	JavaScript files to check with Web config file.
+#
+#	JSON_FILES	JSON files to be validated
+#
+#	JSSTYLE_FILES	JavaScript files to be style-checked
+#
+# You can also override these variables:
+#
+#	BASH		Path to bash (default: "bash")
+#
+#	JSL		Path to JavaScriptLint (default: "jsl")
+#
+#	JSL_FLAGS_NODE	Additional flags to pass through to JSL
+#	JSL_FLAGS_WEB
+#	JSL_FLAGS
+#
+#	JSON		Path to json tool (default: "json")
+#
+#	JSSTYLE		Path to jsstyle (default: "jsstyle")
+#
+#	JSSTYLE_FLAGS	Additional flags to pass through to jsstyle
+#
+
+#
+# Defaults for the various tools we use.
+#
+BASH		?= bash
+BASHSTYLE	?= tools/bashstyle
+JSL		?= jsl
+JSON		?= json
+JSSTYLE		?= jsstyle
+JSL_FLAGS  	?= --nologo --nosummary
+CSTYLE		?= cstyle
+
+#
+# Configure JSL_FLAGS_{NODE,WEB} based on JSL_CONF_{NODE,WEB}.
+#
+ifneq ($(origin JSL_CONF_NODE), undefined)
+	JSL_FLAGS_NODE += --conf=$(JSL_CONF_NODE)
+endif
+
+ifneq ($(origin JSL_CONF_WEB), undefined)
+	JSL_FLAGS_WEB += --conf=$(JSL_CONF_WEB)
+endif
+
+#
+# Targets. For descriptions on what these are supposed to do, see the
+# Joyent Engineering Guide.
+#
+
+#
+# Instruct make to keep around temporary files. We have rules below that
+# automatically update git submodules as needed, but they employ a deps/*/.git
+# temporary file. Without this directive, make tries to remove these .git
+# directories after the build has completed.
+#
+.SECONDARY: $($(wildcard deps/*):%=%/.git)
+
+#
+# This rule enables other rules that use files from a git submodule to have
+# those files depend on deps/module/.git and have "make" automatically check
+# out the submodule as needed.
+#
+deps/%/.git:
+	git submodule update --init deps/$*
+
+#
+# These recipes make heavy use of dynamically-created phony targets. The parent
+# Makefile defines a list of input files like BASH_FILES. We then say that each
+# of these files depends on a fake target called filename.bashchk, and then we
+# define a pattern rule for those targets that runs bash in check-syntax-only
+# mode. This mechanism has the nice properties that if you specify zero files,
+# the rule becomes a noop (unlike a single rule to check all bash files, which
+# would invoke bash with zero files), and you can check individual files from
+# the command line with "make filename.bashchk".
+#
+.PHONY: check-bash
+check-bash: $(BASH_FILES:%=%.bashchk) $(BASH_FILES:%=%.bashstyle)
+
+%.bashchk: %
+	$(BASH) -n $^
+
+%.bashstyle: %
+	$(BASHSTYLE) $^
+
+.PHONY: check-json
+check-json: $(JSON_FILES:%=%.jsonchk)
+
+%.jsonchk: %
+	$(JSON) --validate -f $^
+
+#
+# The above approach can be slow when there are many files to check because it
+# requires that "make" invoke the check tool once for each file, rather than
+# passing in several files at once.  For the JavaScript check targets, we define
+# a variable for the target itself *only if* the list of input files is
+# non-empty.  This avoids invoking the tool if there are no files to check.
+#
+JSL_NODE_TARGET = $(if $(JSL_FILES_NODE), check-jsl-node)
+.PHONY: check-jsl-node
+check-jsl-node: $(JSL_EXEC)
+	$(JSL) $(JSL_FLAGS) $(JSL_FLAGS_NODE) $(JSL_FILES_NODE)
+
+JSL_WEB_TARGET = $(if $(JSL_FILES_WEB), check-jsl-web)
+.PHONY: check-jsl-web
+check-jsl-web: $(JSL_EXEC)
+	$(JSL) $(JSL_FLAGS) $(JSL_FLAGS_WEB) $(JSL_FILES_WEB)
+
+.PHONY: check-jsl
+check-jsl: $(JSL_NODE_TARGET) $(JSL_WEB_TARGET)
+
+JSSTYLE_TARGET = $(if $(JSSTYLE_FILES), check-jsstyle)
+.PHONY: check-jsstyle
+check-jsstyle:  $(JSSTYLE_EXEC)
+	$(JSSTYLE) $(JSSTYLE_FLAGS) $(JSSTYLE_FILES)
+
+CSTYLE_TARGET = $(if $(CSTYLE_FILES), check-cstyle)
+.PHONY: check-cstyle
+check-cstyle:  $(CSTYLE_EXEC)
+	$(CSTYLE) $(CSTYLE_FILES)
+
+.PHONY: check
+check:: check-jsl check-json $(JSSTYLE_TARGET) check-cstyle check-bash
+	@echo check ok
+

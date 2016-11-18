@@ -29,9 +29,12 @@ var fields = {
 };
 
 var reader = {};
+var field;
 
-for (f in fields) {
-	for (stat in fields[f]) {
+for (field in fields) {
+	var stat;
+
+	for (stat in fields[field]) {
 		if (reader[stat])
 			continue;
 
@@ -53,7 +56,7 @@ var pad = function (str, len) {
 
 var outputheader = function ()
 {
-	var f, s;
+	var f, s, w;
 	var str = '';
 
 	for (f in fields) {
@@ -75,6 +78,7 @@ var outputcpu = function (now, last)
 {
 	var f, s;
 	var line = '', i;
+	var value;
 
 	for (f in fields) {
 		for (s in fields[f])
