@@ -11,5 +11,8 @@
 	},
 	"devDependencies": {
 		"tape":		"4.6.2"
+	},
+	"scripts": {
+		"postinstall": "gmake $(eval echo ${MAKE_OVERRIDES})"
 	}
 }
