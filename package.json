@@ -1,6 +1,6 @@
 {
 	"name":		"kstat",
-	"version":	"1.0.0",
+	"version":	"1.0.1",
 	"description":	"illumos libkstat bindings",
 	"homepage":	"https://github.com/joyent/node-kstat",
 	"author":	"Joyent (joyent.com)",
@@ -11,5 +11,8 @@
 	},
 	"devDependencies": {
 		"tape":		"4.6.2"
+	},
+	"scripts": {
+		"postinstall": "gmake $(eval echo ${MAKE_OVERRIDES})"
 	}
 }
