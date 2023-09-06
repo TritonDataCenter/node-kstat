@@ -1,48 +1,53 @@
 #
-# Copyright (c) 2016 Joyent, Inc.  All rights reserved.
+# Copyright 2016 Joyent, Inc.
+# Copyright 2023 MNX Cloud, Inc.
 #
 
-PREFIX_NODE :=	$(shell dirname $$(bash -c 'hash node; hash -t node'))/..
-V8PLUS :=       $(shell $(PREFIX_NODE)/bin/node -e 'require("v8plus");')
-BIT :=		$(shell file $$(which node) | awk '{ print $$3 }' | cut -d- -f1)
-
-include $(V8PLUS)/Makefile.v8plus.defs
-
-MODULE =	kstat
-MODULE_DIR =	.
-
-SRCS =	\
-		kstat.c
-
-ERRNO_JSON =	errno.json
-
-CC =		/opt/local/bin/gcc
-CXX =		/opt/local/bin/g++
+NAME =		node-kstat
 
 #
-# v8plus assumes the presence of ctfconvert and ctfmerge, which is about as
-# practical as requiring a Sun Microsystems badge number; we set these to be
-# /bin/true to override this behavior.
+# This is a standalone node module.
 #
-CTFCONVERT =	/bin/true
-CTFMERGE =	/bin/true
+ENGBLD_SKIP_VALIDATE_BUILDENV =	true
 
-CFLAGS +=	-pthread -D__EXTENSIONS__ -DV8PLUS_NEW_API -D_REENTRANT -m$(BIT)
+#
+# Tools
+#
+NODE :=		$(shell which node)
+NPM :=		$(shell which npm)
+TAPE :=		./node_modules/.bin/tape
 
-CXXFLAGS +=	-m$(BIT)
+#
+# Ensure we have the eng submodule before attempting to include it.
+#
+ENGBLD_REQUIRE :=	$(shell git submodule update --init deps/eng)
+include ./deps/eng/tools/mk/Makefile.defs
+TOP ?=			$(error Unable to access eng.git submodule Makefiles.)
 
-LIBS +=		-lumem -lkstat -m$(BIT)
+#
+# Configuration used by Makefile.defs and Makefile.targ to generate
+# "check" and "docs" targets.
+#
+JSON_FILES =		package.json
+JS_FILES :=		$(shell find examples test -name '*.js')
+JSL_CONF_NODE =		./deps/eng/tools/jsl.node.conf
+JSL_FILES_NODE =	$(JS_FILES)
+JSSTYLE_FILES =		$(JS_FILES)
 
-JSSTYLE = 	./tools/jsstyle
-BASH_FILES =	./tools/multinode
-JSSTYLE_FILES =	$(shell find test examples -name "*.js")
+CLEAN_FILES +=		build
 
-JSL_CONF_NODE =	./tools/jsl.node.conf
-JSL_FILES_NODE = $(shell find test examples -name "*.js")
+include ./deps/eng/tools/mk/Makefile.node_modules.defs
 
-CSTYLE = 	./tools/cstyle.pl
-CSTYLE_FILES =	$(SRCS)
+#
+# Repo-specific targets
+#
+.PHONY: all
+all: $(STAMP_NODE_MODULES)
 
-include $(V8PLUS)/Makefile.v8plus.targ
-include Makefile.check.targ
+.PHONY: test
+test: $(STAMP_NODE_MODULES)
+	$(NODE) $(TAPE) test/*.js
 
+include ./deps/eng/tools/mk/Makefile.deps
+include ./deps/eng/tools/mk/Makefile.node_modules.targ
+include ./deps/eng/tools/mk/Makefile.targ
