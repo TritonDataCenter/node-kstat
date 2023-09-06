@@ -11,4 +11,4 @@ console.log(reader.read());
 reader.close();
 assert.throws(function () { reader.read(); }, /already been closed/);
 assert.throws(function () { reader.close(); }, /already been closed/);
-console.log('test passsed');
+console.log('test passed');
