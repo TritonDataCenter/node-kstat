@@ -3,7 +3,7 @@
  */
 
 var assert = require('assert');
-var kstat = require('kstat');
+var kstat = require('bindings')('kstat');
 
 var reader = new kstat.Reader({ 'module': 'memory_cap' });
 console.log(reader.read());

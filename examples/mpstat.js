@@ -7,7 +7,7 @@
  */
 
 var sys = require('sys');
-var kstat = require('kstat');
+var kstat = require('bindings')('kstat');
 
 var fields = {
 	CPU: { sys: { value: function (s) { return (s.instance); } } },
