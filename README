@@ -32,23 +32,22 @@ For example, here is a simple node.js program that dumps the kstats of
 class 'mib2':
 
   var kstat = require('kstat');
-  var sys = require('sys');
+  var util = require('util');
   var reader = new kstat.Reader({ 'class': 'mib2' } );
-  sys.puts(sys.inspect(reader.read()));
+  console.log(util.inspect(reader.read()));
 
 Here is a the same program that reads only the 'mib2' class kstats from
 the 'icmp' module:
 
   var kstat = require('kstat');
-  var sys = require('sys');
+  var util = require('util');
   var reader = new kstat.Reader({ 'class': 'mib2', module: 'icmp' } );
-  sys.puts(sys.inspect(reader.read()));
+  console.log(util.inspect(reader.read()));
 
 Finally, here is a simple program that prints the number of ICMP datagrams
 received per second:
 
   var kstat = require('kstat');
-  var sys = require('sys');
   var reader = new kstat.Reader({ 'class': 'mib2', module: 'icmp' } );
 
   var data = [];
@@ -61,5 +60,5 @@ received per second:
         if (!(data[0] && data[1]))
                 return;
 
-          sys.puts(data[gen ^ 1].data.inDatagrams - data[gen].data.inDatagrams);
+          console.log(data[gen ^ 1].data.inDatagrams - data[gen].data.inDatagrams);
   }, 1000);
