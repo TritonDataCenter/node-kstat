@@ -252,6 +252,7 @@ KStat::Read(const Napi::CallbackInfo& info)
 		arr.Set(i++, KStat::nvpair_to_value(env, pp));
 	}
 
+	kstatjs_free(ret);
 	return (arr);
 }
 

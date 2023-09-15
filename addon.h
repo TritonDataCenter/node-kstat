@@ -33,6 +33,7 @@ typedef struct kstatjs {
 
 kstatjs_t *kstatjs_init(nvlist_t *);
 nvlist_t *kstatjs_read(kstatjs_t *, nvlist_t *);
+void kstatjs_free(nvlist_t *);
 int kstatjs_close(kstatjs_t *);
 const char *kstatjs_errmsg(void);
 

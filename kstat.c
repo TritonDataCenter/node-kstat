@@ -533,6 +533,12 @@ out:
 	return (nvl);
 }
 
+void
+kstatjs_free(nvlist_t *nvl)
+{
+	nvlist_free(nvl);
+}
+
 int
 kstatjs_close(kstatjs_t *ksj)
 {
