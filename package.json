@@ -5,7 +5,7 @@
   "homepage": "https://github.com/TritonDataCenter/node-kstat",
   "bugs": "https://github.com/TritonDataCenter/node-kstat/issues",
   "license": "MIT",
-  "author": "Triton Engineering",
+  "author": "MNX Cloud (mnx.io)",
   "main": "kstat",
   "repository": "github:TritonDataCenter/node-kstat",
   "dependencies": {
