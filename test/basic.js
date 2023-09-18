@@ -1,4 +1,4 @@
-var kstat = require('kstat');
+var kstat = require('bindings')('kstat');
 var test = require('tape');
 
 var check = function (t, results)

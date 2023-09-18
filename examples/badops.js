@@ -3,7 +3,7 @@
  */
 
 var assert = require('assert');
-var kstat = require('kstat');
+var kstat = require('bindings')('kstat');
 
 var reader = new kstat.Reader({ 'module': 'memory_cap' });
 console.log(reader.read());
@@ -11,4 +11,4 @@ console.log(reader.read());
 reader.close();
 assert.throws(function () { reader.read(); }, /already been closed/);
 assert.throws(function () { reader.close(); }, /already been closed/);
-console.log('test passsed');
+console.log('test passed');

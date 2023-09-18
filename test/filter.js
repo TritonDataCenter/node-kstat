@@ -2,7 +2,7 @@
  * filter.js: tests filtering in both the Reader constructor and read().
  */
 
-var kstat = require('kstat');
+var kstat = require('bindings')('kstat');
 var test = require('tape');
 
 function kstatToIdent(stat)

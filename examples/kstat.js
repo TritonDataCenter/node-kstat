@@ -5,7 +5,7 @@
  * name and/or instance will be displayed.  If the "-v" option is specified,
  * all fields in the named kstat (and their values) will be printed.
  */
-var kstat = require('kstat');
+var kstat = require('bindings')('kstat');
 
 var options = { c: 'class', n: 'name', m: 'module', i: 'instance', v: true };
 var stats = {};

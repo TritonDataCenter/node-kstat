@@ -6,8 +6,7 @@
  * something accurate, you shouldn't say anything at all).
  */
 
-var sys = require('sys');
-var kstat = require('kstat');
+var kstat = require('bindings')('kstat');
 
 var fields = {
 	CPU: { sys: { value: function (s) { return (s.instance); } } },
@@ -71,7 +70,7 @@ var outputheader = function ()
 		str += pad(f, w ? w : f.length);
 	}
 
-	sys.puts(str);
+	console.log(str);
 };
 
 var outputcpu = function (now, last)
@@ -113,7 +112,7 @@ var outputcpu = function (now, last)
 		line += pad(value + '', stat.width ? stat.width : f.length);
 	}
 
-	sys.puts(line);
+	console.log(line);
 };
 
 var data = [];
