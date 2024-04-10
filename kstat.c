@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 Joyent, Inc.
+ * Copyright 2024 MNX Cloud, Inc.
  */
 
 #include <stdlib.h>
@@ -78,11 +79,11 @@ kstatjs_lookup_nvpair(const nvlist_t *arg, const char *str, nvpair_t **nvpp)
 
 	if ((err = nvlist_lookup_nvpair((nvlist_t *)arg, str, nvpp)) != 0) {
 		/*
-		 * Disappointingly, nvlist_lookup_nvpair() conflates the
-		 * EINVAL and ENOENT case -- so we must check for EINVAL here
-		 * and assume that it was actually ENOENT that was intended.
+		 * Disappointingly, pre-April-2024 revisions of illumos have
+		 * nvlist_lookup_nvpair() conflates the EINVAL and ENOENT
+		 * case -- so we must check for EINVAL in addition to ENOENT
 		 */
-		if (err == EINVAL) {
+		if (err == EINVAL || err == ENOENT) {
 			*nvpp = NULL;
 			return (0);
 		}
