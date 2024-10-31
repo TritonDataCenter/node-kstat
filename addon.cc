@@ -83,6 +83,7 @@ KStat::parse_options(const Napi::CallbackInfo& info)
 			Napi::TypeError::New(env,
 			    "illegal kstat specifier (expected string)")
 			    .ThrowAsJavaScriptException();
+			nvlist_free(nvl);
 			return (NULL);
 		}
 		nvlist_add_string(nvl, "class",
@@ -94,6 +95,7 @@ KStat::parse_options(const Napi::CallbackInfo& info)
 			Napi::TypeError::New(env,
 			    "illegal kstat specifier (expected string)")
 			    .ThrowAsJavaScriptException();
+			nvlist_free(nvl);
 			return (NULL);
 		}
 		nvlist_add_string(nvl, "name",
@@ -105,6 +107,7 @@ KStat::parse_options(const Napi::CallbackInfo& info)
 			Napi::TypeError::New(env,
 			    "illegal kstat specifier (expected string)")
 			    .ThrowAsJavaScriptException();
+			nvlist_free(nvl);
 			return (NULL);
 		}
 		nvlist_add_string(nvl, "module",
@@ -116,6 +119,7 @@ KStat::parse_options(const Napi::CallbackInfo& info)
 			Napi::TypeError::New(env,
 			    "illegal kstat specifier (expected double)")
 			    .ThrowAsJavaScriptException();
+			nvlist_free(nvl);
 			return (NULL);
 		}
 		nvlist_add_double(nvl, "instance",
