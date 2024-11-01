@@ -163,8 +163,8 @@ kstatjs_parsearg_int(const nvlist_t *arg, const char *str, int *p)
  * This function consumes its "args" nvlist.
  */
 static int
-kstatjs_parsearg(const nvlist_t *args, char **modulep,
-    char **classp, char **namep, int *instancep)
+kstatjs_parsearg(nvlist_t *args, char **modulep, char **classp, char **namep,
+    int *instancep)
 {
 	int rc = 0;
 	*modulep = *classp = *namep = NULL;
