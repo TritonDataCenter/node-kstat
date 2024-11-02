@@ -159,23 +159,27 @@ kstatjs_parsearg_int(const nvlist_t *arg, const char *str, int *p)
 	return (0);
 }
 
+/*
+ * This function consumes its "args" nvlist.
+ */
 static int
-kstatjs_parsearg(const nvlist_t *args, char **modulep,
-    char **classp, char **namep, int *instancep)
+kstatjs_parsearg(nvlist_t *args, char **modulep, char **classp, char **namep,
+    int *instancep)
 {
+	int rc = 0;
 	*modulep = *classp = *namep = NULL;
 	*instancep = -1;
 
 	if (kstatjs_parsearg_string(args, "module", modulep) != 0 ||
 	    kstatjs_parsearg_string(args, "class", classp) != 0 ||
-	    kstatjs_parsearg_string(args, "name", namep) != 0) {
-		return (-1);
+	    kstatjs_parsearg_string(args, "name", namep) != 0 ||
+	    kstatjs_parsearg_int(args, "instance", instancep) != 0) {
+		rc = -1;
 	}
 
-	if (kstatjs_parsearg_int(args, "instance", instancep) != 0)
-		return (-1);
-
-	return (0);
+	/* No caller uses "args" after it's done here. */
+	nvlist_free(args);
+	return (rc);
 }
 
 kstatjs_t *
